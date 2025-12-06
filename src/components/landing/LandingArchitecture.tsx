@@ -27,6 +27,7 @@ const LandingArchitecture = () => {
   ];
 
   return (
+    <section id="architecture">
     <ParallaxSection className="py-32 px-6 border-t border-border">
       <div className="container mx-auto max-w-6xl">
         <div className="space-y-20">
@@ -94,6 +95,7 @@ const LandingArchitecture = () => {
         </div>
       </div>
     </ParallaxSection>
+    </section>
   );
 };
 
