@@ -1,26 +1,68 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CryptoOrbProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   variant?: 'primary' | 'secondary' | 'accent';
+  seed?: number; // Optional seed for deterministic randomness
 }
 
-export function CryptoOrb({ className, size = 'md', variant = 'primary' }: CryptoOrbProps) {
-  // Generate random values for each orb instance
-  const randomValues = useMemo(() => ({
-    middleSpin: 6 + Math.random() * 12, // 6-18s
-    coreSpin: 2 + Math.random() * 4, // 2-6s
-    orbitSpin: 5 + Math.random() * 10, // 5-15s
-    dataSpin: 12 + Math.random() * 16, // 12-28s
-    spinDirection: Math.random() > 0.5 ? 1 : -1, // clockwise or counter
-    orbitDirection: Math.random() > 0.5 ? 1 : -1,
-    pulseDelay: Math.random() * 2, // 0-2s delay
-    scale: 0.85 + Math.random() * 0.3, // 0.85-1.15 scale
-  }), []);
+export function CryptoOrb({ className, size = 'md', variant = 'primary', seed }: CryptoOrbProps) {
+  const uniqueId = useId();
+  
+  // Use deterministic values based on seed or stable defaults for SSR
+  const getSeededRandom = (index: number) => {
+    if (typeof seed === 'number') {
+      const x = Math.sin(seed * index + index) * 10000;
+      return x - Math.floor(x);
+    }
+    // Return stable default values for SSR
+    return 0.5;
+  };
+
+  // Initialize with stable values for SSR
+  const [randomValues, setRandomValues] = useState(() => ({
+    middleSpin: 12, // Default middle value
+    coreSpin: 4,
+    orbitSpin: 10,
+    dataSpin: 20,
+    spinDirection: 1,
+    orbitDirection: 1,
+    pulseDelay: 1,
+    scale: 1,
+  }));
+
+  // Only generate random values on client after mount
+  useEffect(() => {
+    if (typeof seed === 'number') {
+      // Use seeded random for consistent values
+      setRandomValues({
+        middleSpin: 6 + getSeededRandom(1) * 12,
+        coreSpin: 2 + getSeededRandom(2) * 4,
+        orbitSpin: 5 + getSeededRandom(3) * 10,
+        dataSpin: 12 + getSeededRandom(4) * 16,
+        spinDirection: getSeededRandom(5) > 0.5 ? 1 : -1,
+        orbitDirection: getSeededRandom(6) > 0.5 ? 1 : -1,
+        pulseDelay: getSeededRandom(7) * 2,
+        scale: 0.85 + getSeededRandom(8) * 0.3,
+      });
+    } else {
+      // Use true random for dynamic orbs
+      setRandomValues({
+        middleSpin: 6 + Math.random() * 12,
+        coreSpin: 2 + Math.random() * 4,
+        orbitSpin: 5 + Math.random() * 10,
+        dataSpin: 12 + Math.random() * 16,
+        spinDirection: Math.random() > 0.5 ? 1 : -1,
+        orbitDirection: Math.random() > 0.5 ? 1 : -1,
+        pulseDelay: Math.random() * 2,
+        scale: 0.85 + Math.random() * 0.3,
+      });
+    }
+  }, [seed]);
 
   const sizeClasses = {
     sm: 'w-20 h-20',
@@ -34,8 +76,8 @@ export function CryptoOrb({ className, size = 'md', variant = 'primary' }: Crypt
     accent: 'from-accent/20 via-accent/10 to-transparent'
   };
 
-  // Unique gradient ID to avoid conflicts between orb instances
-  const gradientId = useMemo(() => `orbGradient-${Math.random().toString(36).substr(2, 9)}`, []);
+  // Unique gradient ID using React's useId hook for SSR compatibility
+  const gradientId = `orbGradient-${uniqueId}`;
 
   return (
     <div 

@@ -308,6 +308,23 @@ h4 {
   animation: shimmer 3s linear infinite;
 }
 
+/* Gradient text animation */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}
+
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, var(--color-primary), var(--color-foreground));
