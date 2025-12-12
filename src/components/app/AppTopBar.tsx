@@ -5,39 +5,19 @@ import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Shield, Wallet } from "lucide-react";
 import {
-  useConnection,
   useDisconnect,
-  useChainId,
-  useSwitchChain,
   useAccount,
 } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useToast } from "@/hooks/use-toast";
-import { mantle, mantleSepoliaTestnet } from "wagmi/chains";
-import React from "react";
 
 export function AppTopBar() {
-  const { address, isConnected } = useConnection();
+  const { address, isConnected, chain } = useAccount();
   const { disconnect } = useDisconnect();
   const { toast } = useToast();
-  const chainId = useChainId();
-  const { switchChain } = useSwitchChain();
-  const { chain } = useAccount();
 
   // Get network name from the actual connected chain
   const networkName = chain?.name || "Unknown";
-
-  // Check if user is on an unsupported network and auto-switch
-  React.useEffect(() => {
-    if (isConnected && chainId !== mantle.id && chainId !== mantleSepoliaTestnet.id) {
-      toast({
-        title: "Unsupported Network",
-        description: "Switching to Mantle network...",
-        variant: "destructive",
-      });
-      switchChain({ chainId: mantle.id });
-    }
-  }, [chainId, isConnected, switchChain, toast]);
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;

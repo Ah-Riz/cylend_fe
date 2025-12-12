@@ -6,5 +6,5 @@ export const config = getDefaultConfig({
   appName: "Cylend",
   projectId: WALLETCONNECT_PROJECT_ID,
   chains: [mantle, mantleSepoliaTestnet],
-  ssr: true,
+  // ssr: true,
 });

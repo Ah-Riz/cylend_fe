@@ -10,7 +10,6 @@ import { useState } from "react";
 import { config } from "../lib/wagmi-config";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 
-
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
