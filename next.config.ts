@@ -53,9 +53,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
-  // Prevent module not found issue when build
-  serverExternalPackages: ['pino', 'pino-pretty', 'tape', 'thread-stream'],
 };
 
 export default nextConfig;

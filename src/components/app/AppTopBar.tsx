@@ -4,25 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Shield, Wallet } from "lucide-react";
-import {
-  useDisconnect,
-  useAccount,
-} from "wagmi";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useToast } from "@/hooks/use-toast";
 
 export function AppTopBar() {
-  const { address, isConnected, chain } = useAccount();
-  const { disconnect } = useDisconnect();
-  const { toast } = useToast();
-
-  // Get network name from the actual connected chain
-  const networkName = chain?.name || "Unknown";
-
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
   return (
     <header className="h-14 md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6">
       <div className="flex items-center gap-2 md:gap-4">
@@ -34,11 +17,9 @@ export function AppTopBar() {
 
       <div className="flex items-center gap-2 md:gap-4">
         {/* Network - hidden on small screens */}
-        {isConnected && (
-          <Badge variant="secondary" className="font-normal hidden md:flex">
-            {networkName}
-          </Badge>
-        )}
+        <Badge variant="secondary" className="font-normal hidden md:flex">
+          Mantle
+        </Badge>
 
         {/* Privacy status - compact on mobile */}
         <Badge variant="default" className="bg-primary/10 text-primary border-primary/30 font-normal">
@@ -47,24 +28,10 @@ export function AppTopBar() {
         </Badge>
 
         {/* Wallet - compact on mobile */}
-        {isConnected ? (
-          <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            <span className="hidden sm:inline font-mono text-xs md:text-sm">{formatAddress(address!)}</span>
-            <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => { disconnect(); toast({ title: "Disconnected", description: "You have been disconnected successfully." }); }}>
-              Disconnect
-            </Button>
-          </div>
-        ) : (
-          <ConnectButton.Custom>
-            {({ openConnectModal }) => (
-              <Button variant="outline" size="sm" className="px-2 md:px-3 cursor-pointer" onClick={openConnectModal}>
-                <Wallet className="h-4 w-4 md:mr-2" />
-                <span className="hidden sm:inline">Connect</span>
-              </Button>
-            )}
-          </ConnectButton.Custom>
-        )}
+        <Button variant="outline" size="sm" className="px-2 md:px-3">
+          <Wallet className="h-4 w-4 md:mr-2" />
+          <span className="hidden sm:inline font-mono text-xs md:text-sm">0x742d...9c8a</span>
+        </Button>
       </div>
     </header>
   );
