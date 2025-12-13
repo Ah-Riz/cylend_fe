@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Shield, TrendingUp, Activity, AlertCircle } from "lucide-react";
 import { HolographicCard } from "@/components/animations/HolographicCard";
 import { CryptoGlitch } from "@/components/animations/CryptoGlitch";
-import { BlockchainLoader } from "@/components/animations/BlockchainLoader";
 import {
   Table,
   TableBody,

@@ -50,6 +50,6 @@ export const FEATURES = {
 
 // API endpoints
 export const API_ENDPOINTS = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || '',
   TIMEOUT: 30000, // 30 seconds
 } as const;

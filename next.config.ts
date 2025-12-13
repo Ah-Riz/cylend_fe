@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Turbopack configuration to resolve lockfile warning
   turbopack: {
-    root: "./",
+    root: process.cwd(),
   },
   
   // React strict mode for better development experience
@@ -16,9 +16,7 @@ const nextConfig: NextConfig = {
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],
-    dangerouslyAllowSVG: true,
-    contentDispositionType: "attachment",
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    dangerouslyAllowSVG: false,
   },
   
   // Experimental features for better performance

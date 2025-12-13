@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollReveal } from "@/hooks/use-scroll-animation";
 import { BidirectionalScroll } from "@/components/animations/BidirectionalScroll";
 import { AlertTriangle, Eye, TrendingDown } from "lucide-react";
 

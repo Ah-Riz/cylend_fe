@@ -3,18 +3,12 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronDown, Shield, Zap, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
 import { CryptoGlitch } from "@/components/animations/CryptoGlitch";
 import { CryptoOrb } from "@/components/animations/CryptoOrb";
-import { BlockchainLoader } from "@/components/animations/BlockchainLoader";
 import { FloatingParticles } from "@/components/animations/FloatingParticles";
 
 const LandingHero = () => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = true;
 
   const scrollToArchitecture = () => {
     const element = document.getElementById("architecture");
@@ -51,14 +45,14 @@ const LandingHero = () => {
       <div 
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full blur-[250px]"
         style={{
-          background: `radial-gradient(circle, hsl(var(--primary) / ${mounted ? 0.15 : 0}) 0%, transparent 50%)`,
+          background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 50%)",
           transition: "all 2s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       />
       <div 
         className="absolute top-1/3 left-1/3 w-[600px] h-[600px] rounded-full blur-[180px]"
         style={{
-          background: `radial-gradient(circle, hsl(var(--accent) / ${mounted ? 0.08 : 0}) 0%, transparent 60%)`,
+          background: "radial-gradient(circle, hsl(var(--accent) / 0.08) 0%, transparent 60%)",
           transition: "all 2.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s",
         }}
       />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useId } from 'react';
+import React, { useId, useMemo, useSyncExternalStore } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CryptoOrbProps {
@@ -11,58 +11,54 @@ interface CryptoOrbProps {
 }
 
 export function CryptoOrb({ className, size = 'md', variant = 'primary', seed }: CryptoOrbProps) {
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
   const uniqueId = useId();
-  
-  // Use deterministic values based on seed or stable defaults for SSR
-  const getSeededRandom = (index: number) => {
-    if (typeof seed === 'number') {
-      const x = Math.sin(seed * index + index) * 10000;
+
+  const computedValues = useMemo(() => {
+    const hashString = (value: string) => {
+      let hash = 0;
+      for (let i = 0; i < value.length; i++) {
+        hash = (hash * 31 + value.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash);
+    };
+
+    const baseSeed = typeof seed === 'number' ? seed : hashString(uniqueId);
+
+    const rnd = (index: number) => {
+      const x = Math.sin((baseSeed + 1) * (index + 1) * 9999) * 10000;
       return x - Math.floor(x);
-    }
-    // Return stable default values for SSR
-    return 0.5;
-  };
+    };
 
-  // Initialize with stable values for SSR
-  const [randomValues, setRandomValues] = useState(() => ({
-    middleSpin: 12, // Default middle value
-    coreSpin: 4,
-    orbitSpin: 10,
-    dataSpin: 20,
-    spinDirection: 1,
-    orbitDirection: 1,
-    pulseDelay: 1,
-    scale: 1,
-  }));
+    return {
+      middleSpin: 6 + rnd(1) * 12,
+      coreSpin: 2 + rnd(2) * 4,
+      orbitSpin: 5 + rnd(3) * 10,
+      dataSpin: 12 + rnd(4) * 16,
+      spinDirection: rnd(5) > 0.5 ? 1 : -1,
+      orbitDirection: rnd(6) > 0.5 ? 1 : -1,
+      pulseDelay: rnd(7) * 2,
+      scale: 0.85 + rnd(8) * 0.3,
+    };
+  }, [seed, uniqueId]);
 
-  // Only generate random values on client after mount
-  useEffect(() => {
-    if (typeof seed === 'number') {
-      // Use seeded random for consistent values
-      setRandomValues({
-        middleSpin: 6 + getSeededRandom(1) * 12,
-        coreSpin: 2 + getSeededRandom(2) * 4,
-        orbitSpin: 5 + getSeededRandom(3) * 10,
-        dataSpin: 12 + getSeededRandom(4) * 16,
-        spinDirection: getSeededRandom(5) > 0.5 ? 1 : -1,
-        orbitDirection: getSeededRandom(6) > 0.5 ? 1 : -1,
-        pulseDelay: getSeededRandom(7) * 2,
-        scale: 0.85 + getSeededRandom(8) * 0.3,
-      });
-    } else {
-      // Use true random for dynamic orbs
-      setRandomValues({
-        middleSpin: 6 + Math.random() * 12,
-        coreSpin: 2 + Math.random() * 4,
-        orbitSpin: 5 + Math.random() * 10,
-        dataSpin: 12 + Math.random() * 16,
-        spinDirection: Math.random() > 0.5 ? 1 : -1,
-        orbitDirection: Math.random() > 0.5 ? 1 : -1,
-        pulseDelay: Math.random() * 2,
-        scale: 0.85 + Math.random() * 0.3,
-      });
-    }
-  }, [seed]);
+  const randomValues = hydrated
+    ? computedValues
+    : {
+        middleSpin: 12,
+        coreSpin: 4,
+        orbitSpin: 10,
+        dataSpin: 20,
+        spinDirection: 1,
+        orbitDirection: 1,
+        pulseDelay: 0,
+        scale: 1,
+      };
 
   const sizeClasses = {
     sm: 'w-20 h-20',

@@ -1,16 +1,13 @@
 "use client";
 
-import { ArrowRight, Lock, Globe, Zap, ChevronRight, Shield, Eye } from "lucide-react";
-import { ScrollReveal } from "@/hooks/use-scroll-animation";
-import { BidirectionalScroll, ParallaxSection } from "@/components/animations/BidirectionalScroll";
+import { Lock, Globe, Zap, ChevronRight, Shield, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const LandingArchitecture = () => {
-  const [mounted, setMounted] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const mounted = true;
 
   useEffect(() => {
-    setMounted(true);
     // Auto-cycle through steps
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % 3);

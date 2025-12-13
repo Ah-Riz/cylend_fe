@@ -19,6 +19,7 @@ export function BidirectionalScroll({
   const elementRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isInView, setIsInView] = useState(false);
+  const isInViewRef = useRef(false);
 
   useEffect(() => {
     const element = elementRef.current;
@@ -27,6 +28,7 @@ export function BidirectionalScroll({
     // Intersection Observer for visibility
     const observer = new IntersectionObserver(
       ([entry]) => {
+        isInViewRef.current = entry.isIntersecting;
         setIsInView(entry.isIntersecting);
       },
       { threshold: 0.1, rootMargin: '-50px 0px' }
@@ -34,29 +36,37 @@ export function BidirectionalScroll({
     observer.observe(element);
 
     // Scroll handler for parallax effect
-    const handleScroll = () => {
+    let rafId = 0;
+    const update = () => {
+      rafId = 0;
       if (!element) return;
-      
+      if (!isInViewRef.current) return;
+
       const rect = element.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       const elementHeight = rect.height;
-      
-      // Calculate progress from -1 to 1 based on element position
+
       const center = rect.top + elementHeight / 2;
       const windowCenter = windowHeight / 2;
       const distance = center - windowCenter;
       const maxDistance = windowHeight / 2 + elementHeight / 2;
-      
+
       const progress = Math.max(-1, Math.min(1, distance / maxDistance));
       setScrollProgress(progress);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial calculation
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
 
     return () => {
       observer.disconnect();
       window.removeEventListener('scroll', handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -123,20 +133,31 @@ export function ParallaxSection({
   const [backgroundOffset, setBackgroundOffset] = useState(0);
 
   useEffect(() => {
-    const handleScroll = () => {
+    let rafId = 0;
+
+    const update = () => {
+      rafId = 0;
       if (!sectionRef.current) return;
-      
+
       const rect = sectionRef.current.getBoundingClientRect();
       const speed = 0.5; // Parallax speed
       const yPos = rect.top * speed;
-      
+
       setBackgroundOffset(yPos);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (
