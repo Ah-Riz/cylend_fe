@@ -19,67 +19,35 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Filter, Calendar } from "lucide-react";
+import { useSettlementRecords } from "@/hooks/useSettlementRecords";
+import { BlockchainLoader } from "@/components/animations/BlockchainLoader";
+import { useState, useMemo } from "react";
 
 export default function SettlementRecords() {
-  const records = [
-    {
-      date: "2025-11-29 14:32",
-      direction: "Release",
-      asset: "USDC",
-      amount: "50,000",
-      status: "Settled",
-      vault: "Sapphire",
-    },
-    {
-      date: "2025-11-29 11:18",
-      direction: "Repayment",
-      asset: "MNT",
-      amount: "125,000",
-      status: "Settled",
-      vault: "Sapphire",
-    },
-    {
-      date: "2025-11-28 16:45",
-      direction: "Allocation",
-      asset: "USDC",
-      amount: "200,000",
-      status: "Released",
-      vault: "Sapphire",
-    },
-    {
-      date: "2025-11-28 09:22",
-      direction: "Release",
-      asset: "WETH",
-      amount: "15,000",
-      status: "Settled",
-      vault: "Sapphire",
-    },
-    {
-      date: "2025-11-27 15:38",
-      direction: "Allocation",
-      asset: "MNT",
-      amount: "300,000",
-      status: "Released",
-      vault: "Sapphire",
-    },
-    {
-      date: "2025-11-27 10:12",
-      direction: "Release",
-      asset: "USDC",
-      amount: "75,000",
-      status: "Compliance check failed",
-      vault: "Sapphire",
-    },
-  ];
+  const { data: records, isLoading, error } = useSettlementRecords();
+  const [assetFilter, setAssetFilter] = useState<string>("all");
+  const [directionFilter, setDirectionFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const filteredRecords = useMemo(() => {
+    if (!records) return [];
+    
+    return records.filter((record) => {
+      if (assetFilter !== "all" && record.asset.toLowerCase() !== assetFilter) return false;
+      if (directionFilter !== "all" && record.direction.toLowerCase() !== directionFilter) return false;
+      if (statusFilter !== "all" && record.status.toLowerCase() !== statusFilter) return false;
+      return true;
+    });
+  }, [records, assetFilter, directionFilter, statusFilter]);
+
+  const hasFailures = filteredRecords.some(r => r.status === "Failed");
 
   const getStatusVariant = (status: string) => {
     if (status === "Settled") return "default";
     if (status === "Released") return "secondary";
-    if (status === "Compliance check failed") return "destructive";
+    if (status === "Failed") return "destructive";
     return "secondary";
   };
-
-  const hasFailures = records.some(r => r.status === "Compliance check failed");
 
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -121,22 +89,23 @@ export default function SettlementRecords() {
 
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">Asset</label>
-            <Select defaultValue="all">
+            <Select value={assetFilter} onValueChange={setAssetFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All assets</SelectItem>
                 <SelectItem value="usdc">USDC</SelectItem>
+                <SelectItem value="usdt">USDT</SelectItem>
+                <SelectItem value="wmnt">WMNT</SelectItem>
                 <SelectItem value="mnt">MNT</SelectItem>
-                <SelectItem value="weth">WETH</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">Direction</label>
-            <Select defaultValue="all">
+            <Select value={directionFilter} onValueChange={setDirectionFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -145,13 +114,14 @@ export default function SettlementRecords() {
                 <SelectItem value="allocation">Allocation</SelectItem>
                 <SelectItem value="release">Release</SelectItem>
                 <SelectItem value="repayment">Repayment</SelectItem>
+                <SelectItem value="liquidation">Liquidation</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">Status</label>
-            <Select defaultValue="all">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -159,7 +129,8 @@ export default function SettlementRecords() {
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="settled">Settled</SelectItem>
                 <SelectItem value="released">Released</SelectItem>
-                <SelectItem value="failed">Compliance check failed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -168,53 +139,69 @@ export default function SettlementRecords() {
 
       {/* Records table */}
       <Card className="p-4 md:p-6">
-        <div className="overflow-x-auto -mx-4 md:mx-0">
-          <div className="min-w-[700px] px-4 md:px-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date / Time</TableHead>
-              <TableHead>Direction</TableHead>
-              <TableHead>Asset</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Vault Route</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {records.map((record, index) => (
-              <TableRow key={index} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-mono text-sm">{record.date}</TableCell>
-                <TableCell>{record.direction}</TableCell>
-                <TableCell>
-                  <span className="font-medium">{record.asset}</span>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  ${parseInt(record.amount.replace(/,/g, '')).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={getStatusVariant(record.status) as "default" | "secondary" | "destructive"}
-                    className={
-                      record.status === "Settled"
-                        ? "bg-success/10 text-success border-success/30"
-                        : record.status === "Released"
-                        ? "bg-secondary text-secondary-foreground"
-                        : ""
-                    }
-                  >
-                    {record.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {record.vault}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <BlockchainLoader size="lg" />
           </div>
-        </div>
+        ) : error ? (
+          <div className="text-center py-12 text-muted-foreground">
+            Error loading settlement records. Please try again later.
+          </div>
+        ) : !filteredRecords || filteredRecords.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No settlement records found.
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="min-w-[700px] px-4 md:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date / Time</TableHead>
+                    <TableHead>Direction</TableHead>
+                    <TableHead>Asset</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Vault Route</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRecords.map((record) => (
+                    <TableRow key={record.actionId} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-mono text-sm">{record.date}</TableCell>
+                      <TableCell>{record.direction}</TableCell>
+                      <TableCell>
+                        <span className="font-medium">{record.asset}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {record.amountFormatted}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={getStatusVariant(record.status) as "default" | "secondary" | "destructive"}
+                          className={
+                            record.status === "Settled"
+                              ? "bg-success/10 text-success border-success/30"
+                              : record.status === "Released"
+                              ? "bg-secondary text-secondary-foreground"
+                              : record.status === "Failed"
+                              ? "bg-destructive/10 text-destructive border-destructive/30"
+                              : ""
+                          }
+                        >
+                          {record.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {record.vault}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 pt-6 border-t border-border text-sm text-muted-foreground">
           This view reflects settlement activity on Mantle. Counterparties, memos, and policy checks remain inside the vault.

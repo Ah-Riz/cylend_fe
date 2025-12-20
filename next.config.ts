@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Turbopack configuration to resolve lockfile warning
+  // Turbopack configuration
+  // Empty config to silence warning - Turbopack handles WalletConnect dependencies fine in dev mode
   turbopack: {
     root: process.cwd(),
   },

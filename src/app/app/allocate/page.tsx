@@ -12,34 +12,150 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, Info } from "lucide-react";
-import { useState } from "react";
+import { Shield, Info, Wallet } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAccount } from "wagmi";
+import { useSubmitAction } from "@/hooks/useIngress";
+import { encryptAction, ActionType } from "@/lib/sapphire";
+import { parseTokenAmount, getTokenAddressForType, formatTokenAmount, type TokenType } from "@/lib/tokenUtils";
+import { getTokenConfig } from "@/lib/constants";
+import { type Hex } from "viem";
+import { DepositSelector } from "@/components/DepositSelector";
+import { useDepositOptions } from "@/hooks/usePonderDeposits";
+import { TransactionDialog } from "@/components/TransactionDialog";
 
 export default function Allocate() {
+  const { address, isConnected } = useAccount();
   const { toast } = useToast();
-  const [asset, setAsset] = useState("");
+  const [asset, setAsset] = useState<TokenType | "">("");
   const [amount, setAmount] = useState("");
+  const [depositId, setDepositId] = useState("");
   const [reference, setReference] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState<"pending" | "confirming" | "success" | "error" | null>(null);
+  const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
+  
+  const { submitAction, isPending, isConfirming, isSuccess, hash, error } = useSubmitAction();
+
+  // Get deposits from Ponder
+  const { deposits: availableDeposits } = useDepositOptions(asset || undefined);
+  const selectedDeposit = availableDeposits.find((d) => d.depositId === depositId);
 
   const handleAllocate = async () => {
-    setIsLoading(true);
-    
-    // Simulate blockchain transaction
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    if (!isConnected || !address) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to allocate capital.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!asset || !amount || !depositId) {
+      toast({
+        title: "Invalid input",
+        description: "Please select asset, amount, and deposit.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const tokenType = asset as TokenType;
+
+    if (!selectedDeposit) {
+      toast({
+        title: "Invalid deposit",
+        description: "Selected deposit not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate amount doesn't exceed remaining balance
+    const amountBigInt = parseTokenAmount(amount, tokenType);
+    const remainingBigInt = parseTokenAmount(selectedDeposit.remainingAmount, selectedDeposit.tokenType);
+
+    if (amountBigInt > remainingBigInt) {
+      toast({
+        title: "Insufficient deposit balance",
+        description: `Amount exceeds remaining balance in selected deposit (${selectedDeposit.remainingAmount} ${selectedDeposit.token}).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare action payload
+      const tokenAddress = getTokenAddressForType(tokenType);
+      const amountWei = parseTokenAmount(amount, tokenType);
+      const memo = reference ? new TextEncoder().encode(reference) : new Uint8Array();
+
+      const payload = {
+        actionType: ActionType.SUPPLY,
+        token: tokenAddress,
+        amount: amountWei,
+        onBehalf: address,
+        depositId: depositId as Hex,
+        isNative: tokenType === "native",
+        memo: `0x${Array.from(memo).map((b) => b.toString(16).padStart(2, "0")).join("")}` as Hex,
+      };
+
+      // Encrypt action
+      const ciphertext = encryptAction(payload);
+
+      // Show transaction dialog immediately
+      setShowTransactionDialog(true);
+      setTransactionStatus("pending");
+
+      // Submit action
+      await submitAction(depositId, ciphertext);
+    } catch (err) {
+      console.error("Allocate error:", err);
+      setTransactionStatus("error");
+      toast({
+        title: "Allocation failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle transaction hash update
+  useEffect(() => {
+    if (hash) {
+      setTransactionHash(hash);
+    }
+  }, [hash]);
+
+  // Handle transaction status changes
+  useEffect(() => {
+    if (!showTransactionDialog) return;
+
+    if (isPending) {
+      setTransactionStatus("pending");
+    } else if (isConfirming) {
+      setTransactionStatus("confirming");
+    } else if (isSuccess) {
+      setTransactionStatus("success");
     toast({
       title: "Allocation accepted.",
       description: "Encrypted instruction dispatched to the vault. A settlement record will appear once funds are released.",
     });
-    
-    // Reset form
+      // Reset form after success
+      setTimeout(() => {
     setAsset("");
     setAmount("");
+        setDepositId("");
     setReference("");
-    setIsLoading(false);
-  };
+        setShowTransactionDialog(false);
+        setTransactionStatus(null);
+        setTransactionHash(undefined);
+      }, 3000);
+    } else if (error) {
+      setTransactionStatus("error");
+    }
+  }, [isPending, isConfirming, isSuccess, error, showTransactionDialog, toast]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -59,24 +175,35 @@ export default function Allocate() {
               {/* Pool & Asset */}
               <div className="space-y-2">
                 <Label>Pool & Asset</Label>
-                <Select value={asset} onValueChange={setAsset}>
+                <Select value={asset} onValueChange={(value) => setAsset(value as TokenType)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select asset pool" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="usdc">USDC on Mantle</SelectItem>
-                    <SelectItem value="mnt">MNT on Mantle</SelectItem>
-                    <SelectItem value="weth">WETH on Mantle</SelectItem>
+                    <SelectItem value="usdt">USDT on Mantle</SelectItem>
+                    <SelectItem value="wmnt">WMNT on Mantle</SelectItem>
+                    <SelectItem value="native">MNT (Native) on Mantle</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Deposit Selection */}
+              <DepositSelector
+                selectedDepositId={depositId}
+                onSelectDeposit={setDepositId}
+                filterByToken={asset}
+                label="Deposit"
+                placeholder="Select deposit to use"
+                useHook={true}
+              />
 
               {/* Amount */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Amount</Label>
                   <span className="text-sm text-muted-foreground">
-                    Balance: $250,000
+                    Available in deposit: {selectedDeposit ? `${selectedDeposit.remainingAmount} ${selectedDeposit.token}` : "—"}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -87,10 +214,23 @@ export default function Allocate() {
                     onChange={(e) => setAmount(e.target.value)}
                     className="font-mono"
                   />
-                  <Button variant="secondary" onClick={() => setAmount("250000")}>
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => {
+                      if (selectedDeposit) {
+                        setAmount(selectedDeposit.remainingAmount);
+                      }
+                    }}
+                    disabled={!selectedDeposit}
+                  >
                     Max
                   </Button>
                 </div>
+                {selectedDeposit && amount && parseTokenAmount(amount, asset as TokenType) > parseTokenAmount(selectedDeposit.remainingAmount, selectedDeposit.tokenType) && (
+                  <p className="text-xs text-destructive">
+                    Amount exceeds available balance in selected deposit ({selectedDeposit.remainingAmount} {selectedDeposit.token})
+                  </p>
+                )}
               </div>
 
               {/* Internal reference */}
@@ -121,12 +261,12 @@ export default function Allocate() {
                 size="lg"
                 className="w-full"
                 onClick={handleAllocate}
-                disabled={!asset || !amount || isLoading}
+                disabled={!asset || !amount || !depositId || isPending || isConfirming || !isConnected}
               >
-                {isLoading ? (
+                {isPending || isConfirming ? (
                   <div className="flex items-center gap-2">
                     <BlockchainLoader size="sm" />
-                    <span>Processing...</span>
+                    <span>{isConfirming ? "Confirming..." : "Processing..."}</span>
                   </div>
                 ) : (
                   'Deploy capital'
@@ -144,12 +284,22 @@ export default function Allocate() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Asset</span>
-                  <span className="font-medium">{asset ? asset.toUpperCase() : "—"}</span>
+                  <span className="font-medium">
+                    {asset ? getTokenConfig(asset as TokenType).symbol : "—"}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Amount</span>
                   <span className="font-medium font-mono">
-                    {amount ? `$${parseInt(amount).toLocaleString()}` : "—"}
+                    {amount ? `${amount} ${asset ? getTokenConfig(asset as TokenType).symbol : ""}` : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Deposit</span>
+                  <span className="font-medium font-mono text-xs">
+                    {depositId && typeof depositId === 'string' && depositId.length > 10
+                      ? `${depositId.slice(0, 6)}...${depositId.slice(-4)}`
+                      : depositId || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -176,6 +326,40 @@ export default function Allocate() {
           </Card>
         </div>
       </div>
+
+      {/* Transaction Dialog */}
+      <TransactionDialog
+        open={showTransactionDialog}
+        onOpenChange={setShowTransactionDialog}
+        status={transactionStatus}
+        hash={
+          (transactionHash && typeof transactionHash === 'string')
+            ? (transactionHash as `0x${string}`)
+            : (hash && typeof hash === 'string')
+            ? (hash as `0x${string}`)
+            : undefined
+        }
+        title="Allocate Capital"
+        description={
+          transactionStatus === "pending"
+            ? "Please confirm the transaction in your wallet."
+            : transactionStatus === "confirming"
+            ? "Waiting for blockchain confirmation..."
+            : transactionStatus === "success"
+            ? "Encrypted instruction dispatched to the vault. A settlement record will appear once funds are released."
+            : transactionStatus === "error"
+            ? "Allocation failed. Please try again."
+            : ""
+        }
+        errorMessage={error?.message ? String(error.message) : undefined}
+        onClose={() => {
+          if (transactionStatus === "success" || transactionStatus === "error") {
+            setShowTransactionDialog(false);
+            setTransactionStatus(null);
+            setTransactionHash(undefined);
+          }
+        }}
+      />
     </div>
   );
 }
