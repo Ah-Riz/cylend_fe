@@ -50,6 +50,83 @@ export const FEATURES = {
 
 // API endpoints
 export const API_ENDPOINTS = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || '',
   TIMEOUT: 30000, // 30 seconds
 } as const;
+
+// Contract addresses
+export const CONTRACTS = {
+  INGRESS: process.env.NEXT_PUBLIC_INGRESS_ADDRESS || '',
+  CORE: process.env.NEXT_PUBLIC_CORE_ADDRESS || '',
+  ISM: process.env.NEXT_PUBLIC_ISM_ADDRESS || '',
+  LENDING_PUBLIC_KEY: process.env.NEXT_PUBLIC_LENDING_PUBLIC_KEY || '',
+} as const;
+
+// Token addresses
+export const TOKENS = {
+  WMNT: process.env.NEXT_PUBLIC_WMNT_ADDRESS || '',
+  USDC: process.env.NEXT_PUBLIC_USDC_ADDRESS || '',
+  USDT: process.env.NEXT_PUBLIC_USDT_ADDRESS || '',
+} as const;
+
+// Token configuration
+export type TokenType = 'native' | 'wmnt' | 'usdc' | 'usdt';
+
+export interface TokenConfig {
+  symbol: string;
+  name: string;
+  address: string;
+  decimals: number;
+  isNative: boolean;
+  icon?: string;
+}
+
+export const TOKEN_CONFIGS: Record<TokenType, TokenConfig> = {
+  native: {
+    symbol: 'MNT',
+    name: 'Mantle',
+    address: '0x0000000000000000000000000000000000000000',
+    decimals: 18,
+    isNative: true,
+    icon: '⛰️',
+  },
+  wmnt: {
+    symbol: 'WMNT',
+    name: 'Wrapped Mantle',
+    address: TOKENS.WMNT,
+    decimals: 18,
+    isNative: false,
+    icon: '⛰️',
+  },
+  usdc: {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    address: TOKENS.USDC,
+    decimals: 6,
+    isNative: false,
+    icon: '💵',
+  },
+  usdt: {
+    symbol: 'USDT',
+    name: 'Tether USD',
+    address: TOKENS.USDT,
+    decimals: 6,
+    isNative: false,
+    icon: '💵',
+  },
+} as const;
+
+// Helper to get token config
+export function getTokenConfig(tokenType: TokenType): TokenConfig {
+  return TOKEN_CONFIGS[tokenType];
+}
+
+// Helper to get token address
+export function getTokenAddress(tokenType: TokenType): string {
+  return TOKEN_CONFIGS[tokenType].address;
+}
+
+// Helper to get token decimals
+export function getTokenDecimals(tokenType: TokenType): number {
+  return TOKEN_CONFIGS[tokenType].decimals;
+}

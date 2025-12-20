@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Turbopack configuration to resolve lockfile warning
+  // Turbopack configuration
+  // Empty config to silence warning - Turbopack handles WalletConnect dependencies fine in dev mode
   turbopack: {
-    root: "./",
+    root: process.cwd(),
   },
   
   // React strict mode for better development experience
@@ -16,9 +17,7 @@ const nextConfig: NextConfig = {
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],
-    dangerouslyAllowSVG: true,
-    contentDispositionType: "attachment",
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    dangerouslyAllowSVG: false,
   },
   
   // Experimental features for better performance
@@ -53,9 +52,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
-  // Prevent module not found issue when build
-  serverExternalPackages: ['pino', 'pino-pretty', 'tape', 'thread-stream'],
 };
 
 export default nextConfig;

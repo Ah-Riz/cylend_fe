@@ -9,6 +9,9 @@ import {
   FileText,
   Settings,
   Shield,
+  Wallet,
+  ArrowDownCircle,
+  ArrowUpCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,7 +28,10 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/app", icon: LayoutDashboard, end: true },
   { title: "Pools", url: "/app/pools", icon: Layers },
+  { title: "Deposit", url: "/app/deposit", icon: Wallet },
   { title: "Allocate capital", url: "/app/allocate", icon: TrendingUp },
+  { title: "Borrow", url: "/app/borrow", icon: ArrowDownCircle },
+  { title: "Withdraw", url: "/app/withdraw", icon: ArrowUpCircle },
   { title: "Repay / Settle", url: "/app/repay", icon: ArrowDownUp },
   { title: "Settlement records", url: "/app/records", icon: FileText },
   { title: "Settings", url: "/app/settings", icon: Settings },

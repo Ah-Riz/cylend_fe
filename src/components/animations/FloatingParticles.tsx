@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useId, useMemo, useSyncExternalStore } from 'react';
 
 interface Particle {
   id: number;
@@ -13,31 +13,48 @@ interface Particle {
 }
 
 export function FloatingParticles() {
-  // Initialize with empty array for SSR
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  useEffect(() => {
-    setMounted(true);
-    // Only generate particles on client side after mount
+  const uniqueId = useId();
+
+  const particles = useMemo<Particle[]>(() => {
+    let seed = 0;
+    for (let i = 0; i < uniqueId.length; i++) {
+      seed = (seed * 31 + uniqueId.charCodeAt(i)) | 0;
+    }
+    seed = Math.abs(seed) + 1;
+
+    const rnd = (index: number) => {
+      const x = Math.sin(seed * (index + 1) * 9999) * 10000;
+      return x - Math.floor(x);
+    };
+
     const newParticles: Particle[] = [];
     for (let i = 0; i < 50; i++) {
       newParticles.push({
         id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: Math.random() * 3 + 1,
-        duration: Math.random() * 20 + 10,
-        delay: Math.random() * 5,
-        opacity: Math.random() * 0.5 + 0.1,
+        x: rnd(i * 7 + 1) * 100,
+        y: rnd(i * 7 + 2) * 100,
+        size: rnd(i * 7 + 3) * 3 + 1,
+        duration: rnd(i * 7 + 4) * 20 + 10,
+        delay: rnd(i * 7 + 5) * 5,
+        opacity: rnd(i * 7 + 6) * 0.5 + 0.1,
       });
     }
-    setParticles(newParticles);
-  }, []);
+    return newParticles;
+  }, [uniqueId]);
+
+  if (!hydrated) {
+    return null;
+  }
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {mounted && particles.map((particle) => (
+      {particles.map((particle) => (
         <div
           key={particle.id}
           className="absolute rounded-full bg-primary/30 transition-opacity duration-1000"

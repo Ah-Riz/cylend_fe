@@ -1,7 +1,6 @@
 "use client";
 
 import { Building2, Wallet, TrendingUp } from "lucide-react";
-import { ScrollReveal } from "@/hooks/use-scroll-animation";
 import { BidirectionalScroll } from "@/components/animations/BidirectionalScroll";
 
 const LandingPersonas = () => {

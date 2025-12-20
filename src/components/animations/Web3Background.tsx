@@ -2,6 +2,57 @@
 
 import React, { useEffect, useRef } from 'react';
 
+class Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  color: string;
+  pulsePhase: number;
+
+  constructor(width: number, height: number) {
+    this.x = Math.random() * width;
+    this.y = Math.random() * height;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.radius = Math.random() * 3 + 1;
+    this.color = `hsl(188, 95%, ${50 + Math.random() * 20}%)`;
+    this.pulsePhase = Math.random() * Math.PI * 2;
+  }
+
+  update(width: number, height: number) {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.pulsePhase += 0.05;
+
+    if (this.x < 0) this.x = width;
+    if (this.x > width) this.x = 0;
+    if (this.y < 0) this.y = height;
+    if (this.y > height) this.y = 0;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    const pulse = Math.sin(this.pulsePhase) * 0.5 + 0.5;
+    const currentRadius = this.radius + pulse * 2;
+
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, currentRadius * 3);
+    gradient.addColorStop(0, this.color);
+    gradient.addColorStop(0.5, 'hsla(188, 95%, 48%, 0.2)');
+    gradient.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, currentRadius * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 export function Web3Background() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -12,92 +63,54 @@ export function Web3Background() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setCanvasSize();
-    window.addEventListener('resize', setCanvasSize);
-
-    // Particle system for blockchain nodes
-    class Particle {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-      color: string;
-      pulsePhase: number;
-
-      constructor() {
-        this.x = Math.random() * (canvas?.width || window.innerWidth);
-        this.y = Math.random() * (canvas?.height || window.innerHeight);
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.radius = Math.random() * 3 + 1;
-        this.color = `hsl(188, 95%, ${50 + Math.random() * 20}%)`;
-        this.pulsePhase = Math.random() * Math.PI * 2;
-      }
-
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.pulsePhase += 0.05;
-
-        // Wrap around edges
-        if (this.x < 0) this.x = canvas?.width || window.innerWidth;
-        if (this.x > (canvas?.width || window.innerWidth)) this.x = 0;
-        if (this.y < 0) this.y = canvas?.height || window.innerHeight;
-        if (this.y > (canvas?.height || window.innerHeight)) this.y = 0;
-      }
-
-      draw() {
-        if (!ctx) return;
-        
-        const pulse = Math.sin(this.pulsePhase) * 0.5 + 0.5;
-        const currentRadius = this.radius + pulse * 2;
-        
-        // Glow effect
-        const gradient = ctx.createRadialGradient(
-          this.x, this.y, 0,
-          this.x, this.y, currentRadius * 3
-        );
-        gradient.addColorStop(0, this.color);
-        gradient.addColorStop(0.5, 'hsla(188, 95%, 48%, 0.2)');
-        gradient.addColorStop(1, 'transparent');
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, currentRadius * 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Core particle
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
     }
+
+    let width = 0;
+    let height = 0;
+
+    const setupCanvas = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    setupCanvas();
 
     // Create particles
-    const particles: Particle[] = [];
-    const particleCount = window.innerWidth < 768 ? 30 : 50; // Less particles on mobile
-    
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
+    let particles: Particle[] = [];
+    const initParticles = () => {
+      const particleCount = window.innerWidth < 768 ? 30 : 50; // Less particles on mobile
+      particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle(width, height));
+      }
+    };
+    initParticles();
+
+    const onResize = () => {
+      setupCanvas();
+      initParticles();
+    };
+    window.addEventListener('resize', onResize);
 
     // Animation loop
     let animationId: number;
     const animate = () => {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, width, height);
 
       // Update and draw particles
       particles.forEach(particle => {
-        particle.update();
-        particle.draw();
+        particle.update(width, height);
+        particle.draw(ctx);
       });
 
       // Draw connections
@@ -124,7 +137,7 @@ export function Web3Background() {
     animate();
 
     return () => {
-      window.removeEventListener('resize', setCanvasSize);
+      window.removeEventListener('resize', onResize);
       cancelAnimationFrame(animationId);
     };
   }, []);

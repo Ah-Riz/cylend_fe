@@ -12,65 +12,69 @@ export function DataRain() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setCanvasSize();
-    window.addEventListener('resize', setCanvasSize);
-
-    // Web3/Crypto characters
     const chars = '01₿ΞℌⱮ◈☰⟠⬢ABCDEFabcdef0123456789';
-    const fontSize = window.innerWidth < 768 ? 10 : 14;
-    const columns = canvas.width / fontSize;
-    
-    // Array of drops - one per column
-    const drops: number[] = [];
-    for (let i = 0; i < columns; i++) {
-      drops[i] = Math.random() * -100;
-    }
 
-    // Drawing function
-    function draw() {
-      if (!ctx || !canvas) return;
-      
-      // Black background with transparency for trail effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Green text
-      ctx.fillStyle = 'hsl(188, 95%, 48%)';
+    let width = 0;
+    let height = 0;
+    let fontSize = 14;
+    let drops: number[] = [];
+
+    const setup = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      fontSize = width < 768 ? 10 : 14;
+      const columns = Math.max(1, Math.floor(width / fontSize));
+      drops = Array.from({ length: columns }, () => Math.random() * -100);
       ctx.font = `${fontSize}px monospace`;
-      
-      // Draw characters
+    };
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, width, height);
+
       for (let i = 0; i < drops.length; i++) {
-        // Random character
         const char = chars[Math.floor(Math.random() * chars.length)];
-        
-        // Gradient effect
-        const opacity = Math.max(0, 1 - (drops[i] * fontSize) / canvas.height);
+        const y = drops[i] * fontSize;
+        const opacity = Math.max(0, 1 - y / height);
         ctx.fillStyle = `hsla(188, 95%, 48%, ${opacity})`;
-        
-        // Draw the character
-        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
-        
-        // Send the drop back to top randomly after it has crossed the screen
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        ctx.fillText(char, i * fontSize, y);
+
+        if (y > height && Math.random() > 0.975) {
           drops[i] = 0;
         }
-        
-        // Increment Y coordinate
         drops[i]++;
       }
-    }
+    };
 
-    // Animation loop
-    const interval = setInterval(draw, 35);
+    setup();
+
+    const onResize = () => {
+      setup();
+    };
+    window.addEventListener('resize', onResize);
+
+    let animationId = 0;
+    let lastFrameTime = 0;
+    const frame = (time: number) => {
+      if (time - lastFrameTime >= 35) {
+        draw();
+        lastFrameTime = time;
+      }
+      animationId = requestAnimationFrame(frame);
+    };
+    animationId = requestAnimationFrame(frame);
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('resize', setCanvasSize);
+      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(animationId);
     };
   }, []);
 
