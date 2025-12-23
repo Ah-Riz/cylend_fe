@@ -20,14 +20,14 @@ export default createConfig({
     PrivateLendingIngress: {
       chain: "mantleSepolia",
       abi: PrivateLendingIngressAbi,
-      address: (process.env.NEXT_PUBLIC_INGRESS_ADDRESS || process.env.INGRESS_ADDRESS || "0xe1E911145f2bF1018d1Fb04DE2DAc8A414D82235") as `0x${string}`,
-      startBlock: 32355286, // TODO: Set to actual deployment block
+      address: (process.env.NEXT_PUBLIC_INGRESS_ADDRESS || process.env.INGRESS_ADDRESS || "0xeee5Cbff1b1E41d98c5530296E9f0B079B38F7f1") as `0x${string}`,
+      startBlock: 32475698, // TODO: Set to actual deployment block
     },
     LendingCore: {
       chain: "sapphireTestnet",
       abi: LendingCoreAbi,
-      address: (process.env.NEXT_PUBLIC_CORE_ADDRESS || process.env.CORE_ADDRESS || "0xeE848eA7DDbf1e08E8f67caEfeDe9539aF08524A") as `0x${string}`,
-      startBlock: 14902992, // TODO: Set to actual deployment block
+      address: (process.env.NEXT_PUBLIC_CORE_ADDRESS || process.env.CORE_ADDRESS || "0x22BFa5A91CBE80C649f56cD423bF43847566b5Ba") as `0x${string}`,
+      startBlock: 14943561, // TODO: Set to actual deployment block
     },
   },
 });

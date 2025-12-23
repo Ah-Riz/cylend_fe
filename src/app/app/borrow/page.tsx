@@ -24,6 +24,8 @@ import { type Hex } from "viem";
 import { DepositSelector } from "@/components/DepositSelector";
 import { useDepositOptions, useUserDeposits } from "@/hooks/usePonderDeposits";
 import { TransactionDialog } from "@/components/TransactionDialog";
+import { useLendingPosition } from "@/hooks/useLendingPosition";
+import { TOKEN_POOL_CONFIG } from "@/hooks/usePools";
 
 export default function Borrow() {
   const { address, isConnected } = useAccount();
@@ -41,7 +43,11 @@ export default function Borrow() {
   // Get user deposits (with initial & remaining amounts)
   const { deposits: userDeposits } = useUserDeposits();
 
+  // Get position from Sapphire for selected asset (collateral & borrow)
+  const position = useLendingPosition(asset as TokenType | "");
+
   // Hanya gunakan deposit yang sudah pernah dipakai (initial > remaining) sebagai collateral bucket
+  // DepositId digunakan untuk ownership validation, bukan sebagai sumber funds
   const collateralDeposits = useMemo(() => {
     return (
       userDeposits
@@ -65,6 +71,7 @@ export default function Borrow() {
   );
 
   // Collateral yang sudah dipakai dari deposit ini (initial - remaining)
+  // Ini hanya untuk display, actual collateral ada di Sapphire
   const selectedCollateralAmount = useMemo(() => {
     if (!selectedCollateralDeposit) return null;
     try {
@@ -83,6 +90,31 @@ export default function Borrow() {
       return null;
     }
   }, [selectedCollateralDeposit]);
+
+  // Calculate borrowable amount from collateral in Sapphire
+  // Borrowable = (collateral * LTV) - existing borrow
+  const borrowableAmount = useMemo(() => {
+    if (!asset || !position.data) return null;
+    
+    const tokenType = asset as TokenType;
+    const poolConfig = TOKEN_POOL_CONFIG[tokenType];
+    const collateral = position.data.collateral;
+    const borrow = position.data.borrow;
+    
+    if (collateral === 0n) return null;
+    
+    // Calculate max borrowable: collateral * LTV (in bps, e.g., 7500 = 75%)
+    const maxBorrowable = (collateral * BigInt(poolConfig.ltv)) / 10000n;
+    
+    // Available to borrow = maxBorrowable - existing borrow
+    const available = maxBorrowable > borrow ? maxBorrowable - borrow : 0n;
+    
+    return {
+      max: formatTokenAmount(maxBorrowable, tokenType),
+      available: formatTokenAmount(available, tokenType),
+      availableWei: available,
+    };
+  }, [asset, position.data]);
 
   const handleBorrow = async () => {
     if (!isConnected || !address) {
@@ -109,6 +141,26 @@ export default function Borrow() {
       toast({
         title: "Invalid deposit",
         description: "Selected collateral deposit not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate borrowable amount
+    if (borrowableAmount) {
+      const amountWei = parseTokenAmount(amount, tokenType);
+      if (amountWei > borrowableAmount.availableWei) {
+        toast({
+          title: "Amount exceeds borrowable limit",
+          description: `You can only borrow up to ${borrowableAmount.available} ${getTokenConfig(tokenType).symbol} based on your collateral.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      toast({
+        title: "No collateral available",
+        description: "You don't have any collateral to borrow against.",
         variant: "destructive",
       });
       return;
@@ -216,9 +268,13 @@ export default function Borrow() {
                 <div className="flex items-center justify-between">
                   <Label>Amount</Label>
                   <span className="text-sm text-muted-foreground">
-                    {selectedCollateralDeposit
-                      ? `Available: ${selectedCollateralDeposit.remainingAmount} ${selectedCollateralDeposit.token}`
-                      : "Select a collateral deposit to see available amount"}
+                    {borrowableAmount
+                      ? `Available to borrow: ${borrowableAmount.available} ${asset ? getTokenConfig(asset as TokenType).symbol : ""}`
+                      : position.isLoading
+                      ? "Loading collateral..."
+                      : !collateralDepositId
+                      ? "Select a collateral deposit"
+                      : "No collateral available"}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -228,19 +284,26 @@ export default function Borrow() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className="font-mono"
+                    disabled={!borrowableAmount || borrowableAmount.availableWei === 0n}
                   />
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      if (selectedCollateralDeposit) {
-                        setAmount(selectedCollateralDeposit.remainingAmount);
+                      if (borrowableAmount) {
+                        setAmount(borrowableAmount.available);
                       }
                     }}
-                    disabled={!selectedCollateralDeposit}
+                    disabled={!borrowableAmount || borrowableAmount.availableWei === 0n}
                   >
                     Max
                   </Button>
                 </div>
+                {borrowableAmount && parseFloat(amount) > parseFloat(borrowableAmount.available) && (
+                  <p className="text-xs text-destructive">
+                    Amount exceeds available borrowable amount ({borrowableAmount.available}{" "}
+                    {asset ? getTokenConfig(asset as TokenType).symbol : ""})
+                  </p>
+                )}
               </div>
 
               {/* Collateral Deposit Selection */}
@@ -269,18 +332,24 @@ export default function Borrow() {
               )}
 
               {/* Health Factor Warning */}
-              {amount && collateralDepositId && (
+              {amount && collateralDepositId && borrowableAmount && (
                 <Card className="p-4 border-warning/30 bg-warning/5">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
                     <div className="space-y-1 text-sm">
                       <div className="font-medium text-foreground">
-                        Estimated Health Factor: 1.25
+                        Health Factor Check
                       </div>
                       <p className="text-muted-foreground">
                         Health factor must be ≥ 1.0 to borrow. Your position will be
-                        liquidatable if health factor drops below 1.0.
+                        liquidatable if health factor drops below 1.0. Health factor is calculated
+                        privately on Sapphire during validation.
                       </p>
+                      {position.data && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Current collateral: {position.data.collateralFormatted} | Current borrow: {position.data.borrowFormatted}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -321,6 +390,9 @@ export default function Borrow() {
                   !asset ||
                   !amount ||
                   !collateralDepositId ||
+                  !borrowableAmount ||
+                  borrowableAmount.availableWei === 0n ||
+                  (borrowableAmount && parseFloat(amount) > parseFloat(borrowableAmount.available)) ||
                   isPending ||
                   isConfirming ||
                   !isConnected
@@ -360,13 +432,27 @@ export default function Borrow() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Collateral</span>
                   <span className="font-medium">
-                    {selectedCollateralDeposit && selectedCollateralAmount
-                      ? `${selectedCollateralAmount} ${selectedCollateralDeposit.token}`
-                      : selectedCollateralDeposit
-                      ? `0 ${selectedCollateralDeposit.token}`
+                    {position.data && position.data.collateral > 0n
+                      ? `${position.data.collateralFormatted} ${asset ? getTokenConfig(asset as TokenType).symbol : ""}`
                       : "—"}
                   </span>
                 </div>
+                {borrowableAmount && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Max Borrowable</span>
+                    <span className="font-medium font-mono">
+                      {borrowableAmount.max} {asset ? getTokenConfig(asset as TokenType).symbol : ""}
+                    </span>
+                  </div>
+                )}
+                {borrowableAmount && position.data && position.data.borrow > 0n && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Current Borrow</span>
+                    <span className="font-medium font-mono">
+                      {position.data.borrowFormatted} {asset ? getTokenConfig(asset as TokenType).symbol : ""}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Deposit ID</span>
                   <span className="font-medium font-mono text-xs">

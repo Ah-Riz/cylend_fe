@@ -151,8 +151,11 @@ contract PrivateLendingIngress is Router {
     ) external returns (bytes32 actionId) {
         Deposit storage depositData = deposits[depositId];
         require(depositData.depositor == msg.sender, "not your deposit");
-        require(!depositData.released, "deposit released");
-        require(depositData.amount > 0, "empty deposit");
+        // Allow actions even if deposit already released as long as it has been used before.
+        // This unlocks withdraw-collateral flows where depositId is just an ownership marker.
+        require(!depositData.released || depositUsed[depositId], "deposit released");
+        // Still guard empty buckets for first-time use; allow if already used (e.g., withdraw collateral).
+        require(depositData.amount > 0 || depositUsed[depositId], "empty deposit");
 
         actionId = _initiate(destinationDomain, depositId, ciphertext);
     }
@@ -267,6 +270,10 @@ contract PrivateLendingIngress is Router {
             uint8 actionTypeRaw
         ) = abi.decode(_message, (bytes32, bytes32, address, address, uint256, bool, uint8));
 
+        // ActionType enum: 0=SUPPLY, 1=BORROW, 2=REPAY, 3=WITHDRAW, 4=LIQUIDATE
+        bool isWithdrawCollateral = (actionTypeRaw == 3); // WITHDRAW
+        bool isBorrow = (actionTypeRaw == 1); // BORROW
+
         ActionMetadata storage meta = actions[actionId];
         require(meta.sender != address(0), "action missing");
         require(meta.destinationDomain == _origin, "unexpected origin");
@@ -274,32 +281,13 @@ contract PrivateLendingIngress is Router {
 
         Deposit storage depositData = deposits[depositId];
         require(depositData.depositor == receiver, "receiver must own deposit");
-        require(!depositData.released, "deposit released");
+        // For withdraw collateral, depositId is only an ownership marker, not the source of funds.
+        // So allow released deposits for withdraw; keep strict for other action types.
+        if (!isWithdrawCollateral) {
+            require(!depositData.released, "deposit released");
+        }
         require(depositData.isNative == isNative, "type mismatch");
         require(depositData.isNative || depositData.token == token, "token mismatch");
-        
-        // Determine if this is a WITHDRAW collateral action vs BORROW action
-        // 
-        // Arsitektur:
-        // - Sapphire: hanya untuk komputasi (health factor, LTV, interest)
-        // - Mantle: semua funds ada di sini
-        //
-        // BORROW:
-        // - Sapphire hitung: bisa borrow berapa dari collateral? (komputasi)
-        // - Jika bisa, Sapphire kirim release message ke Mantle
-        // - Mantle release funds dari depositId user → kurangi depositData.amount
-        // - Funds dari depositId spesifik user
-        //
-        // WITHDRAW collateral:
-        // - Sapphire hitung: bisa withdraw berapa? (komputasi)
-        // - Jika bisa, Sapphire kirim release message ke Mantle
-        // - Mantle release funds dari pool total (liquidity[token].totalDeposited)
-        // - Funds dari pool (yang sudah di-supply semua user)
-        // - DepositId hanya untuk ownership validation, bukan sumber funds
-        //
-        // ActionType enum: 0=SUPPLY, 1=BORROW, 2=REPAY, 3=WITHDRAW, 4=LIQUIDATE
-        bool isWithdrawCollateral = (actionTypeRaw == 3); // WITHDRAW
-        bool isBorrow = (actionTypeRaw == 1); // BORROW
         
         // For BORROW: funds come from depositId, so we need sufficient deposit amount
         // For WITHDRAW: funds come from Sapphire collateral, so we can allow even if depositId is empty

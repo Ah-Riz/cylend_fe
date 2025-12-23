@@ -50,12 +50,12 @@ NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_ENABLE_ANALYTICS=false
 NEXT_PUBLIC_ENABLE_DEBUG=false
 
-NEXT_PUBLIC_INGRESS_ADDRESS=0xe1E911145f2bF1018d1Fb04DE2DAc8A414D82235        # PrivateLendingIngress (Mantle)
-NEXT_PUBLIC_CORE_ADDRESS=0xeE848eA7DDbf1e08E8f67caEfeDe9539aF08524A            # LendingCore (Sapphire)
-NEXT_PUBLIC_ROUTER_ADDRESS=0xe1E911145f2bF1018d1Fb04DE2DAc8A414D82235 # Interchain Security Module
-NEXT_PUBLIC_ISM_ADDRESS=0x3072CF40DE1b4b0Efa9b3A86101B0e1313f58A1E
+NEXT_PUBLIC_INGRESS_ADDRESS=0xeee5Cbff1b1E41d98c5530296E9f0B079B38F7f1        # PrivateLendingIngress (Mantle)
+NEXT_PUBLIC_CORE_ADDRESS=0x22BFa5A91CBE80C649f56cD423bF43847566b5Ba            # LendingCore (Sapphire)
+NEXT_PUBLIC_ROUTER_ADDRESS=0xeee5Cbff1b1E41d98c5530296E9f0B079B38F7f1 # Interchain Security Module
+NEXT_PUBLIC_ISM_ADDRESS=0x24B255dB2e2D227ceaf8E474f68e342A4Cd32cB2
 # Hyperlane Router
-NEXT_PUBLIC_LENDING_PUBLIC_KEY=0xfd40fa7104c182f9b08087c21d3232b8e79ccc44b11da592ea635799135af348 # Sapphire public key for encryption
+NEXT_PUBLIC_LENDING_PUBLIC_KEY=0xec9035501dfff50059bd1d512d8347d722f4ce950667b1abd6fc3a202a231c37 # Sapphire public key for encryption
 
 # Token Addresses
 NEXT_PUBLIC_WMNT_ADDRESS=0x67A1f4A939b477A6b7c5BF94D97E45dE87E608eF
@@ -79,8 +79,8 @@ PONDER_RPC_URL_MANTLE_SEPOLIA=https://rpc.sepolia.mantle.xyz
 PONDER_RPC_URL_SAPPHIRE_TESTNET=https://testnet.sapphire.oasis.io
 
 # Contract Addresses (optional, can use defaults from ponder.config.ts)
-INGRESS_ADDRESS=0xe1E911145f2bF1018d1Fb04DE2DAc8A414D82235
-CORE_ADDRESS=0xeE848eA7DDbf1e08E8f67caEfeDe9539aF08524A
+INGRESS_ADDRESS=0xeee5Cbff1b1E41d98c5530296E9f0B079B38F7f1
+CORE_ADDRESS=0x22BFa5A91CBE80C649f56cD423bF43847566b5Ba
 ```
 
 Create `.env` file in `cylend-service/` directory:
@@ -89,7 +89,7 @@ Create `.env` file in `cylend-service/` directory:
 # Backend Service Configuration
 PONDER_API_URL=http://localhost:42069/graphql
 SAPPHIRE_RPC_URL=https://testnet.sapphire.oasis.io
-CORE_ADDRESS=0xeE848eA7DDbf1e08E8f67caEfeDe9539aF08524A # LendingCore contract address
+CORE_ADDRESS=0x22BFa5A91CBE80C649f56cD423bF43847566b5Ba # LendingCore contract address
 OWNER_PRIVATE_KEY=0x... # Private key for processAction calls (should be deployer address)
 
 # Optional
