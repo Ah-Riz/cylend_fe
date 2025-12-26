@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ChevronDown, Shield, Zap, Lock } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { CryptoGlitch } from "@/components/animations/CryptoGlitch";
 import { CryptoOrb } from "@/components/animations/CryptoOrb";
 import { FloatingParticles } from "@/components/animations/FloatingParticles";
@@ -109,29 +109,7 @@ const LandingHero = () => {
           <span className="text-primary font-medium">Private negotiations</span>.
         </p>
 
-        {/* Feature pills */}
-        <div 
-          className="flex flex-wrap items-center justify-center gap-3 pt-2"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(20px)",
-            transition: "all 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s",
-          }}
-        >
-          {[
-            { icon: Shield, text: "ZK-Verified" },
-            { icon: Zap, text: "Cross-Chain" },
-            { icon: Lock, text: "Confidential" },
-          ].map((feature, i) => (
-            <div 
-              key={i}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50 text-sm text-muted-foreground hover:border-primary/30 hover:text-foreground transition-all duration-300"
-            >
-              <feature.icon className="h-4 w-4 text-primary" />
-              {feature.text}
-            </div>
-          ))}
-        </div>
+        {/* Feature pills removed per branding direction (no AI-like icon rows) */}
 
         {/* Stats row - Enhanced with glass morphism */}
         <div 

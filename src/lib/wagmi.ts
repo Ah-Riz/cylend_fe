@@ -1,14 +1,21 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { createConfig, http } from 'wagmi';
+import { injected } from 'wagmi/connectors';
+import { coinbaseWallet } from 'wagmi/connectors';
 import { sapphireTestnet, mantleSepoliaTestnet } from 'wagmi/chains';
 
-// Wagmi Config dengan RainbowKit
-export const config = getDefaultConfig({
-  appName: 'Cylend',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '',
+// Minimal wagmi config (no WalletConnect) to avoid bundling walletconnect logger tests on server
+export const config = createConfig({
   chains: [mantleSepoliaTestnet, sapphireTestnet],
-  ssr: true, // Enable server-side rendering support
+  connectors: [
+    injected(),
+    coinbaseWallet({ appName: 'Cylend' }),
+  ],
+  transports: {
+    [mantleSepoliaTestnet.id]: http(),
+    [sapphireTestnet.id]: http(),
+  },
+  ssr: false,
 });
 
-// Export chains for use in other files
 export const chains = [mantleSepoliaTestnet, sapphireTestnet];
 

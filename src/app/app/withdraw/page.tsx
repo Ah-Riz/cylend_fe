@@ -82,17 +82,19 @@ export default function Withdraw() {
   });
 
   // Filter deposits that can be used for withdraw collateral
-  // For withdraw collateral, depositId is just a reference for ownership validation
-  // Funds come from pool total (liquidity[token].totalDeposited), not from depositId
-  // 
-  // Best practice: Use depositId that has been used for SUPPLY (depositUsed == true)
-  // This ensures the depositId has been verified and used in the protocol
-  // 
+  // IMPORTANT: For withdraw collateral, depositId is ONLY for ownership validation.
+  // Funds come from pool total (liquidity[token].totalDeposited), NOT from depositId.
+  //
+  // After contract change:
+  // - WITHDRAW can use depositId even if released, as long as it was used before (depositUsed=true).
+  // - Active deposits (remaining > 0) are still valid references.
+  //
   // Requirements:
-  // 1. Belongs to user
-  // 2. Same token type
-  // 3. Not released (REQUIRED: contract _handle() checks !depositData.released)
-  // 4. Has been used in submitAction (depositUsed == true) - RECOMMENDED for safety
+  // 1. Belongs to user ✅
+  // 2. Same token type ✅
+  // 3. Allowed if:
+  //    - depositUsed == true (even if released/remaining=0), OR
+  //    - remainingAmount > 0 (active deposit)
   const collateralDeposits = useMemo(() => {
     return userDeposits
       .map((d, index) => {
@@ -104,11 +106,15 @@ export default function Withdraw() {
       .filter(({ deposit, isUsed }) => {
         // Filter by token type jika asset sudah dipilih
         if (asset && deposit.tokenType !== asset) return false;
-        // Not released (REQUIRED by contract validation)
-        if (deposit.released) return false;
-        // Has been used in submitAction (RECOMMENDED for safety)
-        // This ensures we use depositId that was used for SUPPLY
-        return isUsed;
+        // Allow:
+        // - Used deposits (even if released/remaining=0), OR
+        // - Active deposits with remaining > 0
+        try {
+          const remaining = parseTokenAmount(deposit.remainingAmount, deposit.tokenType);
+          return isUsed || remaining > 0n;
+        } catch {
+          return isUsed; // Fallback to isUsed if parsing fails
+        }
       })
       .map(({ deposit }) => deposit);
   }, [userDeposits, asset, depositUsedQueries.data]);
@@ -405,19 +411,39 @@ export default function Withdraw() {
                 onSelectDeposit={setDepositId}
                 filterByToken={asset}
                 label="Deposit ID (Reference)"
-                placeholder="Select any deposit ID (for ownership validation)"
+                placeholder="Select deposit ID (for ownership validation)"
                 deposits={availableDeposits}
                 useHook={false}
               />
               {availableDeposits.length === 0 && asset && (
-                <p className="text-xs text-muted-foreground">
-                  No deposits found for {asset}. Please create a deposit first.
-                </p>
+                <Card className="p-4 border-warning/30 bg-warning/5">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium text-foreground">
+                      No available deposits for {asset.toUpperCase()}
+                    </p>
+                    <p className="text-muted-foreground">
+                      You need at least one depositId (active or already used) as ownership reference.
+                      {position.data && position.data.collateral > 0n && (
+                        <>
+                          {" "}
+                          You already have {position.data.collateralFormatted} {asset.toUpperCase()} collateral in Sapphire. Create or re-use any depositId to proceed; funds still come from the Sapphire pool.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </Card>
               )}
               {depositId && (
-                <p className="text-xs text-muted-foreground">
-                  Note: Deposit ID is only used for ownership validation. Collateral funds come from Sapphire, not from this deposit.
-                </p>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>
+                    <strong>Note:</strong> Deposit ID is only used for ownership validation. Collateral funds come from Sapphire pool, not from this deposit.
+                  </p>
+                  {selectedDeposit && (
+                    <p>
+                      Selected deposit: {selectedDeposit.remainingAmount} {selectedDeposit.token} remaining (this amount is not used for withdrawal).
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Amount */}
@@ -426,10 +452,10 @@ export default function Withdraw() {
                   <Label>Amount</Label>
                   <span className="text-sm text-muted-foreground">
                     {position.data && position.data.collateral > 0n
-                      ? `Collateral: ${position.data.collateralFormatted} ${asset ? getTokenConfig(asset as TokenType).symbol : ""}`
-                      : selectedDeposit
-                        ? `Deposit: ${selectedDeposit.remainingAmount} ${selectedDeposit.token}`
-                        : "—"}
+                      ? `Available collateral: ${position.data.collateralFormatted} ${asset ? getTokenConfig(asset as TokenType).symbol : ""}`
+                      : position.isLoading
+                      ? "Loading collateral..."
+                      : "No collateral available"}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -439,17 +465,16 @@ export default function Withdraw() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className="font-mono"
+                    disabled={!position.data || position.data.collateral === 0n}
                   />
                   <Button
                     variant="secondary"
                     onClick={() => {
                       if (position.data && position.data.collateral > 0n) {
                         setAmount(position.data.collateralFormatted);
-                      } else if (selectedDeposit) {
-                        setAmount(selectedDeposit.remainingAmount);
                       }
                     }}
-                    disabled={!position.data && !selectedDeposit}
+                    disabled={!position.data || position.data.collateral === 0n}
                   >
                     Max
                   </Button>
@@ -459,9 +484,9 @@ export default function Withdraw() {
                     Amount exceeds available collateral ({position.data.collateralFormatted} {asset ? getTokenConfig(asset as TokenType).symbol : ""})
                   </p>
                 )}
-                {!position.data && selectedDeposit && amount && parseFloat(amount) > parseFloat(selectedDeposit.remainingAmount) && (
-                  <p className="text-xs text-destructive">
-                    Amount exceeds available balance ({selectedDeposit.remainingAmount} {selectedDeposit.token})
+                {position.data && position.data.collateral === 0n && (
+                  <p className="text-xs text-muted-foreground">
+                    You don't have any collateral to withdraw for this asset.
                   </p>
                 )}
               </div>

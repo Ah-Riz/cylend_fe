@@ -2,7 +2,44 @@
  * Ponder GraphQL API client
  */
 
-const PONDER_API_URL = process.env.NEXT_PUBLIC_PONDER_API_URL || 'http://localhost:42069/graphql';
+const PONDER_API_URL = process.env.NEXT_PUBLIC_PONDER_API_URL;
+
+function getPonderApiUrl(): string | undefined {
+  if (!PONDER_API_URL) return undefined;
+  if (typeof window === "undefined") return PONDER_API_URL;
+
+  try {
+    const url = new URL(PONDER_API_URL);
+    if (
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1") &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      return undefined;
+    }
+  } catch {
+    // Fall through to returning the raw env value.
+  }
+
+  return PONDER_API_URL;
+}
+
+const PONDER_DISABLE_DURATION_MS = 30_000;
+let ponderDisabledUntil = 0;
+
+function canUsePonderApi(): boolean {
+  return Date.now() >= ponderDisabledUntil && !!getPonderApiUrl();
+}
+
+function disablePonderTemporarily() {
+  ponderDisabledUntil = Date.now() + PONDER_DISABLE_DURATION_MS;
+}
+
+function isPonderNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true;
+  if (err instanceof Error && /failed to fetch|network|connection refused/i.test(err.message)) return true;
+  return false;
+}
 
 export interface PonderDeposit {
   depositId: string;
@@ -59,16 +96,29 @@ export interface PonderPrice {
  * GraphQL query helper
  */
 async function query<T = any>(query: string, variables?: Record<string, any>): Promise<T> {
-  const response = await fetch(PONDER_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  });
+  const apiUrl = getPonderApiUrl();
+  if (!apiUrl) {
+    throw new Error("Ponder API URL is not configured (NEXT_PUBLIC_PONDER_API_URL)." );
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
+  } catch (err) {
+    if (isPonderNetworkError(err)) {
+      disablePonderTemporarily();
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     throw new Error(`GraphQL query failed: ${response.statusText}`);
@@ -91,6 +141,8 @@ export async function getDeposits(where?: {
   released?: boolean;
   token?: string;
 }): Promise<PonderDeposit[]> {
+  if (!canUsePonderApi()) return [];
+
   const whereClause = where
     ? `where: {
         ${where.depositor ? `depositor: "${where.depositor}",` : ''}
@@ -118,14 +170,21 @@ export async function getDeposits(where?: {
     }
   `;
 
-  const data = await query<{ deposits: { items: PonderDeposit[]; totalCount: number } }>(queryStr);
-  return data.deposits.items;
+  try {
+    const data = await query<{ deposits: { items: PonderDeposit[]; totalCount: number } }>(queryStr);
+    return data.deposits.items;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return [];
+    throw err;
+  }
 }
 
 /**
  * Get single deposit by ID
  */
 export async function getDeposit(depositId: string): Promise<PonderDeposit | null> {
+  if (!canUsePonderApi()) return null;
+
   const queryStr = `
     query GetDeposit($depositId: String!) {
       deposit(depositId: $depositId) {
@@ -142,14 +201,21 @@ export async function getDeposit(depositId: string): Promise<PonderDeposit | nul
     }
   `;
 
-  const data = await query<{ deposit: PonderDeposit | null }>(queryStr, { depositId });
-  return data.deposit;
+  try {
+    const data = await query<{ deposit: PonderDeposit | null }>(queryStr, { depositId });
+    return data.deposit;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return null;
+    throw err;
+  }
 }
 
 /**
  * Get actions by deposit ID
  */
 export async function getActionsByDeposit(depositId: string): Promise<PonderAction[]> {
+  if (!canUsePonderApi()) return [];
+
   const queryStr = `
     query GetActionsByDeposit($depositId: String!) {
       actions(where: { depositId: $depositId }) {
@@ -170,17 +236,24 @@ export async function getActionsByDeposit(depositId: string): Promise<PonderActi
     }
   `;
 
-  const data = await query<{ actions: { items: PonderAction[]; totalCount: number } }>(
-    queryStr,
-    { depositId }
-  );
-  return data.actions.items;
+  try {
+    const data = await query<{ actions: { items: PonderAction[]; totalCount: number } }>(
+      queryStr,
+      { depositId }
+    );
+    return data.actions.items;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return [];
+    throw err;
+  }
 }
 
 /**
  * Get actions by user with deposit info
  */
 export async function getActionsByUser(user: string): Promise<PonderAction[]> {
+  if (!canUsePonderApi()) return [];
+
   const queryStr = `
     query GetActionsByUser($user: String!) {
       actions(where: { user: $user }) {
@@ -204,17 +277,24 @@ export async function getActionsByUser(user: string): Promise<PonderAction[]> {
     }
   `;
 
-  const data = await query<{ actions: { items: any[]; totalCount: number } }>(
-    queryStr,
-    { user }
-  );
-  return data.actions.items;
+  try {
+    const data = await query<{ actions: { items: any[]; totalCount: number } }>(
+      queryStr,
+      { user }
+    );
+    return data.actions.items;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return [];
+    throw err;
+  }
 }
 
 /**
  * Get single action by ID
  */
 export async function getAction(actionId: string): Promise<PonderAction | null> {
+  if (!canUsePonderApi()) return null;
+
   const queryStr = `
     query GetAction($actionId: String!) {
       action(actionId: $actionId) {
@@ -232,14 +312,21 @@ export async function getAction(actionId: string): Promise<PonderAction | null> 
     }
   `;
 
-  const data = await query<{ action: PonderAction | null }>(queryStr, { actionId });
-  return data.action;
+  try {
+    const data = await query<{ action: PonderAction | null }>(queryStr, { actionId });
+    return data.action;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return null;
+    throw err;
+  }
 }
 
 /**
  * Get liquidity info for a token
  */
 export async function getLiquidity(token: string): Promise<PonderLiquidity | null> {
+  if (!canUsePonderApi()) return null;
+
   const queryStr = `
     query GetLiquidity($token: String!) {
       liquidity(token: $token) {
@@ -252,14 +339,21 @@ export async function getLiquidity(token: string): Promise<PonderLiquidity | nul
     }
   `;
 
-  const data = await query<{ liquidity: PonderLiquidity | null }>(queryStr, { token });
-  return data.liquidity;
+  try {
+    const data = await query<{ liquidity: PonderLiquidity | null }>(queryStr, { token });
+    return data.liquidity;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return null;
+    throw err;
+  }
 }
 
 /**
  * Get price for a token
  */
 export async function getPrice(token: string): Promise<PonderPrice | null> {
+  if (!canUsePonderApi()) return null;
+
   const queryStr = `
     query GetPrice($token: String!) {
       price(token: $token) {
@@ -271,7 +365,12 @@ export async function getPrice(token: string): Promise<PonderPrice | null> {
     }
   `;
 
-  const data = await query<{ price: PonderPrice | null }>(queryStr, { token });
-  return data.price;
+  try {
+    const data = await query<{ price: PonderPrice | null }>(queryStr, { token });
+    return data.price;
+  } catch (err) {
+    if (isPonderNetworkError(err)) return null;
+    throw err;
+  }
 }
 

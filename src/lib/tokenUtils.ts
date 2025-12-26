@@ -1,5 +1,6 @@
 import { formatUnits, parseUnits, type Address } from 'viem';
 import { getTokenConfig, getTokenDecimals, type TokenType } from './constants';
+export type { TokenType } from './constants';
 
 /**
  * Format token amount to human-readable string

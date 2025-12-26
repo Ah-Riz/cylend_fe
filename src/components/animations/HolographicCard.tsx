@@ -94,7 +94,7 @@ export function HolographicCard({ children, className }: HolographicCardProps) {
       </div>
       
       {/* Main content */}
-      <div className="relative z-30 bg-card/90 backdrop-blur-sm rounded-lg border border-border/50 overflow-hidden">
+      <div className="relative z-30 bg-card rounded-lg border border-border/30 shadow-sm overflow-hidden">
         {children}
       </div>
       

@@ -1,7 +1,6 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Shield, TrendingUp, Activity, AlertCircle } from "lucide-react";
 import { HolographicCard } from "@/components/animations/HolographicCard";
 import { CryptoGlitch } from "@/components/animations/CryptoGlitch";
 import {
@@ -29,25 +28,21 @@ export default function Dashboard() {
         {
           label: "Total allocated",
           value: "$0",
-          icon: TrendingUp,
           change: "0%",
         },
         {
           label: "Total outstanding credit",
           value: "$0",
-          icon: Activity,
           change: "0%",
         },
         {
           label: "Net exposure",
           value: "$0",
-          icon: AlertCircle,
           change: "0%",
         },
         {
           label: "Portfolio health",
           value: "100%",
-          icon: Shield,
           change: "0%",
         },
       ];
@@ -76,25 +71,21 @@ export default function Dashboard() {
       {
         label: "Total allocated",
         value: formatValue(totalAllocated),
-        icon: TrendingUp,
         change: "+0%", // TODO: Calculate change from previous period
       },
       {
         label: "Total outstanding credit",
         value: formatValue(totalBorrowed),
-        icon: Activity,
         change: "+0%", // TODO: Calculate change from previous period
       },
       {
         label: "Net exposure",
         value: formatValue(netExposure),
-        icon: AlertCircle,
         change: "0%", // TODO: Calculate change from previous period
       },
       {
         label: "Portfolio health",
         value: `${portfolioHealth.toFixed(1)}%`,
-        icon: Shield,
         change: "+0%", // TODO: Calculate change from previous period
       },
     ];
@@ -118,14 +109,11 @@ export default function Dashboard() {
 
       {/* Privacy banner */}
       <Card className="p-4 border-primary/30 bg-primary/5">
-        <div className="flex items-start gap-3">
-          <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <div className="space-y-1">
-            <div className="font-medium">Privacy: Always On</div>
-            <p className="text-sm text-muted-foreground">
-              Allocation instructions and counterparties are evaluated inside the vault. Settlement remains observable on Mantle.
-            </p>
-          </div>
+        <div className="space-y-1">
+          <div className="font-medium">Privacy: Always On</div>
+          <p className="text-sm text-muted-foreground">
+            Allocation instructions and counterparties are evaluated privately on Oasis Sapphire. Settlement remains observable on Mantle.
+          </p>
         </div>
       </Card>
 
@@ -135,12 +123,11 @@ export default function Dashboard() {
           <BlockchainLoader size="lg" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {metrics.map((metric, index) => (
             <HolographicCard key={index} className={`stagger-${index + 1}`}>
               <div className="p-4 md:p-6">
-                <div className="flex items-start justify-between mb-2 md:mb-4">
-                  <metric.icon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                <div className="flex items-start justify-end mb-2 md:mb-4">
                   <span className={`text-xs ${metric.change.startsWith('+') ? 'text-success' : metric.change.startsWith('-') ? 'text-destructive' : ''}`}>
                     {metric.change}
                   </span>

@@ -12,9 +12,8 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    // "module": "esnext",
-    "module": "commonjs",
-    // "moduleResolution": "bundler",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -29,17 +28,27 @@
         "./src/*"
       ]
     },
-    "moduleResolution": "node"
+    
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "cylend-indexer",
+    "cylend-indexer/**",
+    "cylend-service",
+    "cylend-service/**",
+    "test",
+    "test/**",
+    "scripts",
+    "scripts/**",
+    "ignition",
+    "ignition/**",
+    "hardhat.config.ts"
   ]
 }
