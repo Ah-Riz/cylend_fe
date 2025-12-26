@@ -1,9 +1,9 @@
 "use client";
 
-import { Shield } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import Logo from "@/components/Logo";
 
 const LandingNav = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -25,12 +25,11 @@ const LandingNav = () => {
           : "bg-transparent"
       }`}
     >
-      <div className="container mx-auto max-w-7xl px-6">
+      <div className="container mx-auto max-w-7xl px-4 md:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <Shield className="h-5 w-5 text-primary transition-transform group-hover:scale-110" />
-            <span className="font-medium text-foreground">Cylend</span>
+          <Link href="/" className="flex items-center gap-2">
+            <Logo className="h-6 w-auto" variant="secondary" />
           </Link>
 
           {/* CTA */}

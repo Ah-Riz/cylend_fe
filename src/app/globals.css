@@ -60,21 +60,61 @@
 
 /* Base styles */
 * {
-  border-color: var(--color-border);
+  border-color: hsl(var(--border));
 }
 
 :root {
-  --primary: 188 95% 48%;
-  --secondary: 220 20% 12%;
-  --accent: 188 95% 48%;
-  --border: 220 20% 15%;
   --background: 220 40% 2%;
   --foreground: 210 20% 90%;
-}
+
+  --card: 220 30% 6%;
+  --card-foreground: 210 20% 90%;
+
+  --popover: 220 30% 6%;
+  --popover-foreground: 210 20% 90%;
+
+  --primary: 188 95% 48%;
+  --primary-foreground: 220 40% 2%;
+
+  --secondary: 220 20% 12%;
+  --secondary-foreground: 210 20% 90%;
+
+  --muted: 220 20% 12%;
+  --muted-foreground: 215 15% 60%;
+
+  --accent: 188 95% 48%;
+  --accent-foreground: 220 40% 2%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 20% 98%;
+
+  --success: 142 76% 36%;
+  --success-foreground: 210 20% 98%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 220 40% 2%;
+
+  --border: 220 20% 15%;
+  --input: 220 20% 15%;
+  --ring: 188 95% 48%;
+
+  --radius: 0.375rem;
+
+  --sidebar-background: 220 35% 4%;
+  --sidebar-foreground: 210 20% 90%;
+  --sidebar-primary: 188 95% 48%;
+  --sidebar-primary-foreground: 220 40% 2%;
+  --sidebar-accent: 220 20% 12%;
+  --sidebar-accent-foreground: 210 20% 90%;
+  --sidebar-border: 220 20% 10%;
+  --sidebar-ring: 188 95% 48%;
+
+  --vault-glow: 188 95% 48%;
+ }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

@@ -1,7 +1,12 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import dynamic from "next/dynamic";
 import { useAccount } from "wagmi";
+
+const RainbowConnectButton = dynamic(
+  () => import("@rainbow-me/rainbowkit").then((m) => m.ConnectButton),
+  { ssr: false },
+);
 
 export function ConnectWallet() {
   const { address, isConnected, chain } = useAccount();
@@ -13,7 +18,7 @@ export function ConnectWallet() {
           {/* Connected to {chain?.name} ({address?.slice(0, 6)}...{address?.slice(-4)}) */}
         </div>
       )}
-      <ConnectButton />
+      <RainbowConnectButton />
     </div>
   );
 }
