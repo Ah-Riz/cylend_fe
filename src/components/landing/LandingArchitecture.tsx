@@ -128,14 +128,6 @@ const LandingArchitecture = () => {
                         Step {index + 1}
                       </span>
                     </div>
-                    
-                    {/* Icon with glow effect */}
-                    <div className="relative mb-6">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-border/50 bg-background/20 backdrop-blur-sm">
-                        <step.icon className="h-6 w-6 text-primary" />
-                      </div>
-                    </div>
-                    
                     {/* Content */}
                     <div className="space-y-3">
                       <div>
