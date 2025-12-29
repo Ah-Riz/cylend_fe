@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, Globe, Zap, ChevronRight, Shield, Eye } from "lucide-react";
+import { Lock, Globe, Zap, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const LandingArchitecture = () => {
@@ -63,7 +63,6 @@ const LandingArchitecture = () => {
             }}
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/20 text-sm text-primary">
-              <Shield className="h-4 w-4" />
               <span>Architecture</span>
             </div>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
@@ -129,23 +128,6 @@ const LandingArchitecture = () => {
                         Step {index + 1}
                       </span>
                     </div>
-                    
-                    {/* Icon with glow effect */}
-                    <div className="relative mb-6">
-                      <div className={`
-                        h-14 w-14 rounded-xl
-                        bg-gradient-to-br ${step.color}
-                        border ${step.borderColor}
-                        flex items-center justify-center
-                        group-hover:scale-110 transition-transform duration-300
-                      `}>
-                        <step.icon className="h-7 w-7 text-primary" />
-                      </div>
-                      {activeStep === index && (
-                        <div className="absolute inset-0 rounded-xl bg-primary/20 blur-xl animate-pulse" />
-                      )}
-                    </div>
-                    
                     {/* Content */}
                     <div className="space-y-3">
                       <div>
@@ -186,14 +168,9 @@ const LandingArchitecture = () => {
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-primary/0 via-primary/5 to-primary/0 opacity-0 hover:opacity-100 transition-opacity duration-500" />
               
               <div className="relative space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Eye className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">The Privacy Flow</h3>
-                    <p className="text-sm text-muted-foreground">End-to-end confidential lending</p>
-                  </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">The Privacy Flow</h3>
+                  <p className="text-sm text-muted-foreground">End-to-end confidential lending</p>
                 </div>
                 
                 <div className="space-y-4 pl-14">

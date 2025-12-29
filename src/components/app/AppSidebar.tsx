@@ -1,14 +1,17 @@
 "use client";
 
 import { NavLink } from "@/components/NavLink";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Layers,
+  PiggyBank,
   TrendingUp,
-  ArrowDownUp,
-  FileText,
+  HandCoins,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  ReceiptText,
   Settings,
-  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,13 +24,17 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import Logo from "@/components/Logo";
 
-const menuItems = [
-  { title: "Dashboard", url: "/app", icon: LayoutDashboard, end: true },
+const menuItems: { title: string; url: string; end?: boolean; icon: LucideIcon }[] = [
+  { title: "Dashboard", url: "/app", end: true, icon: LayoutDashboard },
   { title: "Pools", url: "/app/pools", icon: Layers },
+  { title: "Deposit", url: "/app/deposit", icon: PiggyBank },
   { title: "Allocate capital", url: "/app/allocate", icon: TrendingUp },
-  { title: "Repay / Settle", url: "/app/repay", icon: ArrowDownUp },
-  { title: "Settlement records", url: "/app/records", icon: FileText },
+  { title: "Borrow", url: "/app/borrow", icon: HandCoins },
+  { title: "Withdraw", url: "/app/withdraw", icon: ArrowUpToLine },
+  { title: "Repay / Settle", url: "/app/repay", icon: ReceiptText },
+  { title: "Settlement records", url: "/app/records", icon: ArrowDownToLine },
   { title: "Settings", url: "/app/settings", icon: Settings },
 ];
 
@@ -36,15 +43,18 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
+    <Sidebar collapsible="icon">
       <SidebarContent>
         {/* Logo */}
-        <div className="p-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary flex-shrink-0" />
-            {!isCollapsed && (
-              <span className="font-medium text-lg">Cylend</span>
-            )}
+        <div
+          className={
+            isCollapsed
+              ? "h-14 md:h-16 px-3 border-b border-border flex items-center justify-center"
+              : "h-14 md:h-16 px-4 md:px-6 border-b border-border flex items-center"
+          }
+        >
+          <div className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-2"}>
+            <Logo className="h-6 w-auto flex-shrink-0" variant="secondary" />
           </div>
         </div>
 
@@ -57,14 +67,18 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       end={item.end}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                      className={
+                        isCollapsed
+                          ? "flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                          : "flex items-center gap-3 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                      }
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>

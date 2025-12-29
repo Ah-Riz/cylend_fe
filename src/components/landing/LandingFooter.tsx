@@ -1,15 +1,14 @@
-import { Shield } from "lucide-react";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 const LandingFooter = () => {
   return (
     <footer className="border-t border-border py-12 px-6">
-      <div className="container mx-auto max-w-6xl">
+      <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col items-center gap-8 text-center">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <span className="font-medium">Cylend</span>
+            <Logo className="h-6 w-auto" variant="primary" />
           </div>
 
           {/* Links */}

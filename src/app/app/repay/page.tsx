@@ -11,26 +11,130 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, Info } from "lucide-react";
-import { useState } from "react";
+import { Shield, Info, Wallet } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAccount } from "wagmi";
+import { useSubmitAction } from "@/hooks/useIngress";
+import { encryptAction, ActionType } from "@/lib/sapphire";
+import { parseTokenAmount, getTokenAddressForType, formatTokenAmount } from "@/lib/tokenUtils";
+import { getTokenConfig, type TokenType } from "@/lib/constants";
+import { type Hex } from "viem";
+import { BlockchainLoader } from "@/components/animations/BlockchainLoader";
+import { DepositSelector } from "@/components/DepositSelector";
+import { useDepositOptions } from "@/hooks/usePonderDeposits";
+import { TransactionDialog } from "@/components/TransactionDialog";
+import { useLendingPosition } from "@/hooks/useLendingPosition";
 
 export default function Repay() {
+  const { address, isConnected } = useAccount();
   const { toast } = useToast();
-  const [asset, setAsset] = useState("");
+  const [asset, setAsset] = useState<TokenType | "">("");
   const [amount, setAmount] = useState("");
+  const [depositId, setDepositId] = useState("");
   const [reference, setReference] = useState("");
+  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState<"pending" | "confirming" | "success" | "error" | null>(null);
+  
+  const { submitAction, isPending, isConfirming, isSuccess, hash, error } = useSubmitAction();
 
-  const handleRepay = () => {
+  // Get deposits from Ponder
+  const { deposits: availableDeposits } = useDepositOptions(asset || undefined);
+  const selectedDeposit = availableDeposits.find((d) => d.depositId === depositId);
+
+  // Get on-chain lending position (collateral & borrow) from Sapphire
+  const position = useLendingPosition(asset as TokenType | "");
+
+  const handleRepay = async () => {
+    if (!isConnected || !address) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to repay.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!asset || !amount || !depositId) {
+      toast({
+        title: "Invalid input",
+        description: "Please select asset, amount, and deposit.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const tokenType = asset as TokenType;
+    const selectedDeposit = availableDeposits.find((d) => d.depositId === depositId);
+
+    if (!selectedDeposit) {
+      toast({
+        title: "Invalid deposit",
+        description: "Selected deposit not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare action payload
+      const tokenAddress = getTokenAddressForType(tokenType);
+      const amountWei = parseTokenAmount(amount, tokenType);
+      const memo = reference ? new TextEncoder().encode(reference) : new Uint8Array();
+
+      const payload = {
+        actionType: ActionType.REPAY,
+        token: tokenAddress,
+        amount: amountWei,
+        onBehalf: address,
+        depositId: depositId as Hex,
+        isNative: tokenType === "native",
+        memo: `0x${Array.from(memo).map((b) => b.toString(16).padStart(2, "0")).join("")}` as Hex,
+      };
+
+      // Encrypt action
+      const ciphertext = encryptAction(payload);
+
+      // Show transaction dialog
+      setShowTransactionDialog(true);
+      setTransactionStatus("pending");
+
+      // Submit action
+      await submitAction(depositId, ciphertext);
+    } catch (err) {
+      console.error("Repay error:", err);
+      setTransactionStatus("error");
+      toast({
+        title: "Repayment failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle transaction status changes
+  useEffect(() => {
+    if (isPending) {
+      setTransactionStatus("pending");
+    } else if (isConfirming) {
+      setTransactionStatus("confirming");
+    } else if (isSuccess) {
+      setTransactionStatus("success");
     toast({
-      title: "Repayment instruction received.",
-      description: "Settlement record will update after vault confirmation.",
+        title: "Repayment accepted.",
+        description: "Encrypted instruction dispatched to the vault. A settlement record will appear once funds are released.",
     });
-    // Reset form
+      // Reset form after success
+      setTimeout(() => {
     setAsset("");
     setAmount("");
+        setDepositId("");
     setReference("");
-  };
+      }, 2000);
+    } else if (error) {
+      setTransactionStatus("error");
+    }
+  }, [isPending, isConfirming, isSuccess, error, toast]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -50,24 +154,39 @@ export default function Repay() {
               {/* Asset */}
               <div className="space-y-2">
                 <Label>Asset</Label>
-                <Select value={asset} onValueChange={setAsset}>
+                <Select value={asset} onValueChange={(value) => setAsset(value as TokenType)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select asset" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="usdc">USDC</SelectItem>
-                    <SelectItem value="mnt">MNT</SelectItem>
-                    <SelectItem value="weth">WETH</SelectItem>
+                    <SelectItem value="usdt">USDT</SelectItem>
+                    <SelectItem value="wmnt">WMNT</SelectItem>
+                    <SelectItem value="native">MNT (Native)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Deposit Selection */}
+              <DepositSelector
+                deposits={availableDeposits}
+                selectedDepositId={depositId}
+                onSelectDeposit={setDepositId}
+                filterByToken={asset}
+                label="Deposit"
+                placeholder="Select deposit to use"
+              />
 
               {/* Amount */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Amount</Label>
                   <span className="text-sm text-muted-foreground">
-                    Outstanding: $50,000
+                    {position.data?.borrowFormatted
+                      ? `Borrowed: ${position.data.borrowFormatted} ${
+                          asset ? getTokenConfig(asset as TokenType).symbol : ""
+                        }`
+                      : "No active borrow for this asset."}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -78,7 +197,15 @@ export default function Repay() {
                     onChange={(e) => setAmount(e.target.value)}
                     className="font-mono"
                   />
-                  <Button variant="secondary" onClick={() => setAmount("50000")}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (position.data?.borrowFormatted) {
+                        setAmount(position.data.borrowFormatted);
+                      }
+                    }}
+                    disabled={!position.data || position.data.borrow === 0n}
+                  >
                     Full
                   </Button>
                 </div>
@@ -112,9 +239,16 @@ export default function Repay() {
                 size="lg"
                 className="w-full"
                 onClick={handleRepay}
-                disabled={!asset || !amount}
+                disabled={!asset || !amount || !depositId || isPending || isConfirming || !isConnected}
               >
-                Submit repayment
+                {isPending || isConfirming ? (
+                  <div className="flex items-center gap-2">
+                    <BlockchainLoader size="sm" />
+                    <span>{isConfirming ? "Confirming..." : "Processing..."}</span>
+                  </div>
+                ) : (
+                  "Submit repayment"
+                )}
               </Button>
             </div>
           </Card>
@@ -128,12 +262,20 @@ export default function Repay() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Asset</span>
-                  <span className="font-medium">{asset ? asset.toUpperCase() : "—"}</span>
+                  <span className="font-medium">
+                    {asset ? getTokenConfig(asset as TokenType).symbol : "—"}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Amount</span>
                   <span className="font-medium font-mono">
-                    {amount ? `$${parseInt(amount).toLocaleString()}` : "—"}
+                    {amount ? `${amount} ${asset ? getTokenConfig(asset as TokenType).symbol : ""}` : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Deposit</span>
+                  <span className="font-medium font-mono text-xs">
+                    {depositId ? `${depositId.slice(0, 6)}...${depositId.slice(-4)}` : "—"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -160,6 +302,35 @@ export default function Repay() {
           </Card>
         </div>
       </div>
+
+      {/* Transaction Dialog */}
+      <TransactionDialog
+        open={showTransactionDialog}
+        onOpenChange={setShowTransactionDialog}
+        status={transactionStatus}
+        hash={hash}
+        title={
+          transactionStatus === "pending" ? "Confirm Repayment"
+            : transactionStatus === "confirming" ? "Confirming Repayment"
+            : transactionStatus === "success" ? "Repayment Successful"
+            : transactionStatus === "error" ? "Repayment Failed"
+            : undefined
+        }
+        description={
+          transactionStatus === "pending" ? "Please confirm the repayment transaction in your wallet."
+            : transactionStatus === "confirming" ? "Waiting for blockchain confirmation..."
+            : transactionStatus === "success" ? "Your repayment has been successfully submitted."
+            : transactionStatus === "error" ? undefined
+            : undefined
+        }
+        errorMessage={error?.message}
+        onClose={() => {
+          if (transactionStatus === "success" || transactionStatus === "error") {
+            setShowTransactionDialog(false);
+            setTransactionStatus(null);
+          }
+        }}
+      />
     </div>
   );
 }

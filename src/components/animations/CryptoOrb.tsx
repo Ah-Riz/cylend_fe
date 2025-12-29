@@ -105,7 +105,10 @@ export function CryptoOrb({ className, size = 'md', variant = 'primary', seed }:
       <div 
         className="absolute inset-4 rounded-full blur-md bg-gradient-to-br from-primary/30 to-accent/30"
         style={{ 
-          animation: `spin ${randomValues.middleSpin}s linear infinite`,
+          animationName: 'spin',
+          animationDuration: `${randomValues.middleSpin}s`,
+          animationTimingFunction: 'linear',
+          animationIterationCount: 'infinite',
           animationDirection: randomValues.spinDirection > 0 ? 'normal' : 'reverse',
         }}
       />
@@ -118,7 +121,10 @@ export function CryptoOrb({ className, size = 'md', variant = 'primary', seed }:
         <div 
           className="absolute inset-0 rounded-full bg-gradient-to-br from-transparent via-white/20 to-transparent"
           style={{ 
-            animation: `spin ${randomValues.coreSpin}s linear infinite`,
+            animationName: 'spin',
+            animationDuration: `${randomValues.coreSpin}s`,
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
             animationDirection: randomValues.spinDirection > 0 ? 'reverse' : 'normal',
           }}
         />
@@ -128,7 +134,10 @@ export function CryptoOrb({ className, size = 'md', variant = 'primary', seed }:
       <div 
         className="absolute inset-0"
         style={{ 
-          animation: `spin ${randomValues.orbitSpin}s linear infinite`,
+          animationName: 'spin',
+          animationDuration: `${randomValues.orbitSpin}s`,
+          animationTimingFunction: 'linear',
+          animationIterationCount: 'infinite',
           animationDirection: randomValues.orbitDirection > 0 ? 'normal' : 'reverse',
         }}
       >
@@ -147,7 +156,10 @@ export function CryptoOrb({ className, size = 'md', variant = 'primary', seed }:
           strokeWidth="1"
           strokeDasharray="5 10"
           style={{ 
-            animation: `spin ${randomValues.dataSpin}s linear infinite`,
+            animationName: 'spin',
+            animationDuration: `${randomValues.dataSpin}s`,
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
             animationDirection: randomValues.spinDirection > 0 ? 'normal' : 'reverse',
             transformOrigin: 'center'
           }}

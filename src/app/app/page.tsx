@@ -1,7 +1,6 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Shield, TrendingUp, Activity, AlertCircle } from "lucide-react";
 import { HolographicCard } from "@/components/animations/HolographicCard";
 import { CryptoGlitch } from "@/components/animations/CryptoGlitch";
 import {
@@ -13,58 +12,90 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { usePools } from "@/hooks/usePools";
+import { useSettlementRecords } from "@/hooks/useSettlementRecords";
+import { BlockchainLoader } from "@/components/animations/BlockchainLoader";
+import { useMemo } from "react";
 
 export default function Dashboard() {
-  const metrics = [
-    {
-      label: "Total allocated",
-      value: "$2,450,000",
-      icon: TrendingUp,
-      change: "+12.5%",
-    },
-    {
-      label: "Total outstanding credit",
-      value: "$1,890,000",
-      icon: Activity,
-      change: "+8.2%",
-    },
-    {
-      label: "Net exposure",
-      value: "$560,000",
-      icon: AlertCircle,
-      change: "-3.1%",
-    },
-    {
-      label: "Portfolio health",
-      value: "98.5%",
-      icon: Shield,
-      change: "+0.3%",
-    },
-  ];
+  const { data: pools, isLoading: poolsLoading } = usePools();
+  const { data: records, isLoading: recordsLoading } = useSettlementRecords();
 
-  const recentRecords = [
-    {
-      date: "2025-11-29 14:32",
-      direction: "Release",
-      asset: "USDC",
-      amount: "50,000",
-      status: "Settled",
-    },
-    {
-      date: "2025-11-29 11:18",
-      direction: "Repayment",
-      asset: "MNT",
-      amount: "125,000",
-      status: "Settled",
-    },
-    {
-      date: "2025-11-28 16:45",
-      direction: "Allocation",
-      asset: "USDC",
-      amount: "200,000",
-      status: "Released",
-    },
-  ];
+  // Calculate metrics from pools data
+  const metrics = useMemo(() => {
+    if (!pools || pools.length === 0) {
+      return [
+        {
+          label: "Total allocated",
+          value: "$0",
+          change: "0%",
+        },
+        {
+          label: "Total outstanding credit",
+          value: "$0",
+          change: "0%",
+        },
+        {
+          label: "Net exposure",
+          value: "$0",
+          change: "0%",
+        },
+        {
+          label: "Portfolio health",
+          value: "100%",
+          change: "0%",
+        },
+      ];
+    }
+
+    // Sum up all pools
+    const totalAllocated = pools.reduce((sum, pool) => sum + pool.totalDeposited, 0n);
+    const totalBorrowed = pools.reduce((sum, pool) => sum + pool.totalBorrowed, 0n);
+    const netExposure = totalAllocated - totalBorrowed;
+
+    // Calculate portfolio health (simplified: based on utilization)
+    const avgUtilization = pools.reduce((sum, pool) => sum + pool.utilization, 0) / pools.length;
+    const portfolioHealth = Math.max(0, 100 - avgUtilization);
+
+    // Format values - sum all tokens (simplified display)
+    // Note: In production, we'd need to convert each token to USD using prices
+    const formatValue = (value: bigint) => {
+      // For now, display in raw format (will need price oracle for accurate USD conversion)
+      if (value === 0n) return "$0";
+      const num = Number(value);
+      // Format with commas
+      return `$${num.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    };
+
+    return [
+      {
+        label: "Total allocated",
+        value: formatValue(totalAllocated),
+        change: "+0%", // TODO: Calculate change from previous period
+      },
+      {
+        label: "Total outstanding credit",
+        value: formatValue(totalBorrowed),
+        change: "+0%", // TODO: Calculate change from previous period
+      },
+      {
+        label: "Net exposure",
+        value: formatValue(netExposure),
+        change: "0%", // TODO: Calculate change from previous period
+      },
+      {
+        label: "Portfolio health",
+        value: `${portfolioHealth.toFixed(1)}%`,
+        change: "+0%", // TODO: Calculate change from previous period
+      },
+    ];
+  }, [pools]);
+
+  // Get recent records (last 3)
+  const recentRecords = useMemo(() => {
+    if (!records || records.length === 0) return [];
+    return records.slice(0, 3);
+  }, [records]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -78,81 +109,104 @@ export default function Dashboard() {
 
       {/* Privacy banner */}
       <Card className="p-4 border-primary/30 bg-primary/5">
-        <div className="flex items-start gap-3">
-          <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <div className="space-y-1">
-            <div className="font-medium">Privacy: Always On</div>
-            <p className="text-sm text-muted-foreground">
-              Allocation instructions and counterparties are evaluated inside the vault. Settlement remains observable on Mantle.
-            </p>
-          </div>
+        <div className="space-y-1">
+          <div className="font-medium">Privacy: Always On</div>
+          <p className="text-sm text-muted-foreground">
+            Allocation instructions and counterparties are evaluated privately on Oasis Sapphire. Settlement remains observable on Mantle.
+          </p>
         </div>
       </Card>
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        {metrics.map((metric, index) => (
-          <HolographicCard key={index} className={`stagger-${index + 1}`}>
-            <div className="p-4 md:p-6">
-              <div className="flex items-start justify-between mb-2 md:mb-4">
-                <metric.icon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                <span className={`text-xs ${metric.change.startsWith('+') ? 'text-success' : 'text-destructive'}`}>
-                  {metric.change}
-                </span>
+      {poolsLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <BlockchainLoader size="lg" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {metrics.map((metric, index) => (
+            <HolographicCard key={index} className={`stagger-${index + 1}`}>
+              <div className="p-4 md:p-6">
+                <div className="flex items-start justify-end mb-2 md:mb-4">
+                  <span className={`text-xs ${metric.change.startsWith('+') ? 'text-success' : metric.change.startsWith('-') ? 'text-destructive' : ''}`}>
+                    {metric.change}
+                  </span>
+                </div>
+                <div className="space-y-0.5 md:space-y-1">
+                  <CryptoGlitch 
+                    text={metric.value}
+                    className="text-lg md:text-2xl font-medium"
+                  />
+                  <div className="text-xs md:text-sm text-muted-foreground">{metric.label}</div>
+                </div>
               </div>
-              <div className="space-y-0.5 md:space-y-1">
-                <CryptoGlitch 
-                  text={metric.value}
-                  className="text-lg md:text-2xl font-medium"
-                />
-                <div className="text-xs md:text-sm text-muted-foreground">{metric.label}</div>
-              </div>
-            </div>
-          </HolographicCard>
-        ))}
-      </div>
+            </HolographicCard>
+          ))}
+        </div>
+      )}
 
       {/* Recent settlement records */}
       <Card className="p-4 md:p-6 animate-slide-up-delayed">
         <h2 className="text-lg md:text-xl font-medium mb-4">Recent Settlement Records</h2>
-        <div className="overflow-x-auto -mx-4 md:mx-0">
-          <div className="min-w-[600px] px-4 md:px-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date / Time</TableHead>
-              <TableHead>Direction</TableHead>
-              <TableHead>Asset</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Vault</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recentRecords.map((record, index) => (
-              <TableRow key={index} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-mono text-sm">{record.date}</TableCell>
-                <TableCell>{record.direction}</TableCell>
-                <TableCell>
-                  <span className="font-medium">{record.asset}</span>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  ${parseInt(record.amount.replace(/,/g, '')).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="bg-success/10 text-success border-success/30">
-                    {record.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  Sapphire
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {recordsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <BlockchainLoader size="lg" />
           </div>
-        </div>
+        ) : !recentRecords || recentRecords.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No recent settlement records.
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="min-w-[600px] px-4 md:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date / Time</TableHead>
+                    <TableHead>Direction</TableHead>
+                    <TableHead>Asset</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Vault</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentRecords.map((record) => (
+                    <TableRow key={record.actionId} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-mono text-sm">{record.date}</TableCell>
+                      <TableCell>{record.direction}</TableCell>
+                      <TableCell>
+                        <span className="font-medium">{record.asset}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {record.amountFormatted}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={record.status === "Settled" ? "default" : record.status === "Released" ? "secondary" : "destructive"}
+                          className={
+                            record.status === "Settled"
+                              ? "bg-success/10 text-success border-success/30"
+                              : record.status === "Released"
+                              ? "bg-secondary text-secondary-foreground"
+                              : record.status === "Failed"
+                              ? "bg-destructive/10 text-destructive border-destructive/30"
+                              : ""
+                          }
+                        >
+                          {record.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {record.vault}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

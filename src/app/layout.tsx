@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import "@rainbow-me/rainbowkit/styles.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
@@ -10,7 +11,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Cylend - Privacy-Preserving Credit Infrastructure",
-  description: "Institutional-grade credit infrastructure with privacy-preserving settlement on Mantle.",
+  description: "Institutional-grade credit infrastructure with confidential compute on Oasis Sapphire.",
+  icons: {
+    icon: "/logo/secondary.svg",
+    shortcut: "/logo/secondary.svg",
+    apple: "/logo/secondary.svg",
+  },
 };
 
 export default function RootLayout({
