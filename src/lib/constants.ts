@@ -88,7 +88,7 @@ export const TOKEN_CONFIGS: Record<TokenType, TokenConfig> = {
     address: '0x0000000000000000000000000000000000000000',
     decimals: 18,
     isNative: true,
-    icon: '⛰️',
+    icon: '/mantle-mnt-logo.png',
   },
   wmnt: {
     symbol: 'WMNT',
@@ -96,7 +96,7 @@ export const TOKEN_CONFIGS: Record<TokenType, TokenConfig> = {
     address: TOKENS.WMNT,
     decimals: 18,
     isNative: false,
-    icon: '⛰️',
+    icon: '/mantle-mnt-logo.png',
   },
   usdc: {
     symbol: 'USDC',
@@ -104,7 +104,7 @@ export const TOKEN_CONFIGS: Record<TokenType, TokenConfig> = {
     address: TOKENS.USDC,
     decimals: 6,
     isNative: false,
-    icon: '💵',
+    icon: '/usd-coin-usdc-logo.png',
   },
   usdt: {
     symbol: 'USDT',
@@ -112,7 +112,7 @@ export const TOKEN_CONFIGS: Record<TokenType, TokenConfig> = {
     address: TOKENS.USDT,
     decimals: 6,
     isNative: false,
-    icon: '💵',
+    icon: '/tether-usdt-logo.png',
   },
 } as const;
 

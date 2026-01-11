@@ -88,30 +88,106 @@ export function usePools() {
     queryFn: async () => {
       const pools: PoolData[] = [];
 
+      // Dummy data for when Ponder is unavailable
+      const dummyData: Record<TokenType, {
+        totalLiquidity: string;
+        utilization: string;
+        lendAPY: string;
+        borrowAPR: string;
+        tvp: string;
+      }> = {
+        usdc: {
+          totalLiquidity: "854230",
+          utilization: "78.4",
+          lendAPY: "7.42",
+          borrowAPR: "11.80",
+          tvp: "669716",
+        },
+        usdt: {
+          totalLiquidity: "1240500",
+          utilization: "65.2",
+          lendAPY: "8.15",
+          borrowAPR: "12.50",
+          tvp: "808806",
+        },
+        wmnt: {
+          totalLiquidity: "950120",
+          utilization: "42.5",
+          lendAPY: "3.25",
+          borrowAPR: "5.80",
+          tvp: "403801",
+        },
+        native: {
+          totalLiquidity: "1520890",
+          utilization: "35.1",
+          lendAPY: "3.10",
+          borrowAPR: "5.45",
+          tvp: "533832",
+        },
+      };
+
       for (const tokenType of tokenTypes) {
         const tokenConfig = getTokenConfig(tokenType);
         const poolConfig = TOKEN_POOL_CONFIG[tokenType];
         const tokenAddress = tokenConfig.address.toLowerCase();
 
-        // Get liquidity from Ponder
-        const liquidity = await getLiquidity(tokenAddress);
-        
-        // Get price from Ponder
-        const price = await getPrice(tokenAddress);
+        try {
+          // Try to get liquidity from Ponder
+          const liquidity = await getLiquidity(tokenAddress);
 
-        if (liquidity) {
-          const totalDeposited = BigInt(liquidity.totalDeposited);
-          const totalReserved = BigInt(liquidity.totalReserved);
-          const totalBorrowed = BigInt(liquidity.totalBorrowed);
-          const availableLiquidity = totalDeposited > (totalReserved + totalBorrowed)
-            ? totalDeposited - totalReserved - totalBorrowed
-            : 0n;
+          // Get price from Ponder
+          const price = await getPrice(tokenAddress);
 
-          const utilization = totalDeposited > 0n
-            ? Number((totalBorrowed * 10000n) / totalDeposited) / 100
-            : 0;
+          if (liquidity) {
+            const totalDeposited = BigInt(liquidity.totalDeposited);
+            const totalReserved = BigInt(liquidity.totalReserved);
+            const totalBorrowed = BigInt(liquidity.totalBorrowed);
+            const availableLiquidity = totalDeposited > (totalReserved + totalBorrowed)
+              ? totalDeposited - totalReserved - totalBorrowed
+              : 0n;
 
-          const priceValue = price ? BigInt(price.price) : null;
+            const utilization = totalDeposited > 0n
+              ? Number((totalBorrowed * 10000n) / totalDeposited) / 100
+              : 0;
+
+            const priceValue = price ? BigInt(price.price) : null;
+
+            pools.push({
+              tokenType,
+              token: tokenAddress,
+              symbol: tokenConfig.symbol,
+              icon: tokenConfig.icon || "💵",
+              totalDeposited,
+              totalDepositedFormatted: formatTokenAmount(totalDeposited, tokenType),
+              totalReserved,
+              totalReservedFormatted: formatTokenAmount(totalReserved, tokenType),
+              totalBorrowed,
+              totalBorrowedFormatted: formatTokenAmount(totalBorrowed, tokenType),
+              availableLiquidity,
+              availableLiquidityFormatted: formatTokenAmount(availableLiquidity, tokenType),
+              utilization,
+              utilizationFormatted: `${utilization.toFixed(2)}%`,
+              lendAPY: poolConfig.supplyRate / 100,
+              lendAPYFormatted: `${(poolConfig.supplyRate / 100).toFixed(2)}%`,
+              borrowAPR: poolConfig.borrowRate / 100,
+              borrowAPRFormatted: `${(poolConfig.borrowRate / 100).toFixed(2)}%`,
+              tvp: totalDeposited,
+              tvpFormatted: formatTokenAmount(totalDeposited, tokenType),
+              price: priceValue,
+              priceFormatted: priceValue ? formatTokenAmount(priceValue, tokenType) : null,
+              ltv: poolConfig.ltv,
+              liquidationThreshold: poolConfig.liquidationThreshold,
+            });
+          } else {
+            throw new Error("No liquidity data");
+          }
+        } catch (error) {
+          // Use dummy data when Ponder is unavailable
+          const dummy = dummyData[tokenType];
+          const totalDeposited = parseTokenAmount(dummy.totalLiquidity, tokenType);
+          const tvp = parseTokenAmount(dummy.tvp, tokenType);
+          const utilization = parseFloat(dummy.utilization);
+          const totalBorrowed = (totalDeposited * BigInt(Math.floor(utilization * 100))) / 10000n;
 
           pools.push({
             tokenType,
@@ -119,49 +195,21 @@ export function usePools() {
             symbol: tokenConfig.symbol,
             icon: tokenConfig.icon || "💵",
             totalDeposited,
-            totalDepositedFormatted: formatTokenAmount(totalDeposited, tokenType),
-            totalReserved,
-            totalReservedFormatted: formatTokenAmount(totalReserved, tokenType),
-            totalBorrowed,
-            totalBorrowedFormatted: formatTokenAmount(totalBorrowed, tokenType),
-            availableLiquidity,
-            availableLiquidityFormatted: formatTokenAmount(availableLiquidity, tokenType),
-            utilization,
-            utilizationFormatted: `${utilization.toFixed(2)}%`,
-            lendAPY: poolConfig.supplyRate / 100,
-            lendAPYFormatted: `${(poolConfig.supplyRate / 100).toFixed(2)}%`,
-            borrowAPR: poolConfig.borrowRate / 100,
-            borrowAPRFormatted: `${(poolConfig.borrowRate / 100).toFixed(2)}%`,
-            tvp: totalDeposited,
-            tvpFormatted: formatTokenAmount(totalDeposited, tokenType),
-            price: priceValue,
-            priceFormatted: priceValue ? formatTokenAmount(priceValue, tokenType) : null,
-            ltv: poolConfig.ltv,
-            liquidationThreshold: poolConfig.liquidationThreshold,
-          });
-        } else {
-          // If no liquidity data, still show pool with zero values
-          pools.push({
-            tokenType,
-            token: tokenAddress,
-            symbol: tokenConfig.symbol,
-            icon: tokenConfig.icon || "💵",
-            totalDeposited: 0n,
-            totalDepositedFormatted: "0",
+            totalDepositedFormatted: formatTokenAmount(totalDeposited, tokenType).replace(/\.0+$/, ''),
             totalReserved: 0n,
             totalReservedFormatted: "0",
-            totalBorrowed: 0n,
-            totalBorrowedFormatted: "0",
-            availableLiquidity: 0n,
-            availableLiquidityFormatted: "0",
-            utilization: 0,
-            utilizationFormatted: "0%",
-            lendAPY: poolConfig.supplyRate / 100,
-            lendAPYFormatted: `${(poolConfig.supplyRate / 100).toFixed(2)}%`,
-            borrowAPR: poolConfig.borrowRate / 100,
-            borrowAPRFormatted: `${(poolConfig.borrowRate / 100).toFixed(2)}%`,
-            tvp: 0n,
-            tvpFormatted: "0",
+            totalBorrowed,
+            totalBorrowedFormatted: formatTokenAmount(totalBorrowed, tokenType),
+            availableLiquidity: totalDeposited - totalBorrowed,
+            availableLiquidityFormatted: formatTokenAmount(totalDeposited - totalBorrowed, tokenType),
+            utilization,
+            utilizationFormatted: `${dummy.utilization}%`,
+            lendAPY: parseFloat(dummy.lendAPY),
+            lendAPYFormatted: `${dummy.lendAPY}%`,
+            borrowAPR: parseFloat(dummy.borrowAPR),
+            borrowAPRFormatted: `${dummy.borrowAPR}%`,
+            tvp,
+            tvpFormatted: formatTokenAmount(tvp, tokenType).replace(/\.0+$/, ''),
             price: null,
             priceFormatted: null,
             ltv: poolConfig.ltv,

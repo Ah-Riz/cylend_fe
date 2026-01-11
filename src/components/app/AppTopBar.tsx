@@ -9,7 +9,7 @@ import { sapphireTestnet, mantleSepoliaTestnet } from "wagmi/chains";
 
 export function AppTopBar() {
   const chainId = useChainId();
-  
+
   const getChainName = () => {
     if (chainId === mantleSepoliaTestnet.id) return 'Mantle';
     if (chainId === sapphireTestnet.id) return 'Sapphire';
@@ -18,11 +18,11 @@ export function AppTopBar() {
 
   return (
     <header className="relative z-30 h-14 md:h-16 border-b border-border flex items-center">
-      <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8 flex items-center justify-between">
+      <div className="mx-auto w-full max-w-7xl px-3 md:px-6 lg:px-8 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 md:gap-4">
-          <SidebarTrigger className="z-30" />
-          <div className="hidden sm:block text-sm text-muted-foreground">
-            TVP: <span className="font-mono text-foreground">$17.6M</span>
+          <SidebarTrigger className="h-9 w-9 md:h-10 md:w-10" />
+          <div className="hidden md:block text-sm text-muted-foreground">
+            TVP: <span className="font-mono text-foreground">$2.45M</span>
           </div>
         </div>
 
@@ -33,8 +33,9 @@ export function AppTopBar() {
           </Badge>
 
           {/* Privacy status - compact on mobile */}
-          <Badge variant="default" className="bg-primary/10 text-primary border-primary/30 font-normal">
-            <span>Privacy: Always On</span>
+          <Badge variant="default" className="bg-primary/10 text-primary border-primary/30 font-normal text-xs md:text-sm">
+            <span className="hidden sm:inline">Privacy: Always On</span>
+            <span className="sm:hidden">Privacy On</span>
           </Badge>
 
           {/* Wallet Connect Button */}
