@@ -21,9 +21,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Info, Wallet, Plus, CheckCircle2 } from "lucide-react";
+import { Info, Wallet, Plus, CheckCircle2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount } from "wagmi";
 import { useDeposits } from "@/hooks/useDeposits";
@@ -37,6 +38,7 @@ import { TransactionDialog } from "@/components/TransactionDialog";
 import { useUserDeposits } from "@/hooks/usePonderDeposits";
 
 export default function Deposit() {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
   const { toast } = useToast();
   const [asset, setAsset] = useState<TokenType | "">("");
@@ -392,9 +394,20 @@ export default function Deposit() {
                 </TableHeader>
                 <TableBody>
                   {deposits.map((deposit, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={index} className="group">
                       <TableCell className="font-mono text-sm">
-                        {deposit.depositId}
+                        <div className="flex items-center gap-2">
+                          {deposit.depositId}
+                          <a
+                            href={`https://sepolia.mantlescan.xyz/address/${CONTRACTS.INGRESS}`} // Best we can do without TX Hash
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                            title="View Contract on Explorer"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">{deposit.token}</span>
@@ -421,8 +434,12 @@ export default function Deposit() {
                         {deposit.createdAt}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          View
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/app/deposit/${deposit.depositId}`)}
+                        >
+                          Details
                         </Button>
                       </TableCell>
                     </TableRow>

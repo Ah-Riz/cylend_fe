@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
-import { getDeposits, getDeposit, type PonderDeposit } from "@/lib/ponder";
+import { getDeposits, getDeposit, getActionsByDeposit, type PonderDeposit } from "@/lib/ponder";
 import { formatTokenAmount } from "@/lib/tokenUtils";
 import { getTokenConfig, type TokenType } from "@/lib/constants";
 import { type Address } from "viem";
@@ -39,6 +39,18 @@ export function usePonderDeposit(depositId: string | null, enabled = true) {
   return useQuery({
     queryKey: ["ponder-deposit", depositId],
     queryFn: () => (depositId ? getDeposit(depositId) : null),
+    enabled: enabled && !!depositId,
+    refetchInterval: 10000,
+  });
+}
+
+/**
+ * Hook to get actions for a specific deposit
+ */
+export function useDepositActions(depositId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["ponder-deposit-actions", depositId],
+    queryFn: () => (depositId ? getActionsByDeposit(depositId) : []),
     enabled: enabled && !!depositId,
     refetchInterval: 10000,
   });
@@ -102,7 +114,7 @@ export function useUserDeposits() {
     deposits: formattedDeposits || [],
     isLoading,
     error,
-    refetch: () => {}, // Will be handled by react-query
+    refetch: () => { }, // Will be handled by react-query
   };
 }
 

@@ -48,45 +48,54 @@ export default function Dashboard() {
       ];
     }
 
-    // Sum up all pools
-    const totalAllocated = pools.reduce((sum, pool) => sum + pool.totalDeposited, 0n);
-    const totalBorrowed = pools.reduce((sum, pool) => sum + pool.totalBorrowed, 0n);
+    // Sum up all pools using formatted (human-readable) values to avoid decimal issues
+    // For a real app, we would multiply by price. Here we assume 1 token = $1 for simplicity if price is missing.
+    const totalAllocated = pools.reduce((sum, pool) => {
+      const amount = parseFloat(pool.totalDepositedFormatted.replace(/,/g, ''));
+      return sum + amount;
+    }, 0);
+
+    const totalBorrowed = pools.reduce((sum, pool) => {
+      const amount = parseFloat(pool.totalBorrowedFormatted.replace(/,/g, ''));
+      return sum + amount;
+    }, 0);
+
     const netExposure = totalAllocated - totalBorrowed;
 
     // Calculate portfolio health (simplified: based on utilization)
     const avgUtilization = pools.reduce((sum, pool) => sum + pool.utilization, 0) / pools.length;
     const portfolioHealth = Math.max(0, 100 - avgUtilization);
 
-    // Format values - sum all tokens (simplified display)
-    // Note: In production, we'd need to convert each token to USD using prices
-    const formatValue = (value: bigint) => {
-      // For now, display in raw format (will need price oracle for accurate USD conversion)
-      if (value === 0n) return "$0";
-      const num = Number(value);
-      // Format with commas
-      return `$${num.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    // Beautiful format: $2.5M, $450K etc.
+    const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(value);
     };
 
     return [
       {
         label: "Total allocated",
-        value: formatValue(totalAllocated),
-        change: "+0%", // TODO: Calculate change from previous period
+        value: formatCurrency(totalAllocated),
+        change: "+0%",
       },
       {
         label: "Total outstanding credit",
-        value: formatValue(totalBorrowed),
-        change: "+0%", // TODO: Calculate change from previous period
+        value: formatCurrency(totalBorrowed),
+        change: "+0%",
       },
       {
         label: "Net exposure",
-        value: formatValue(netExposure),
-        change: "0%", // TODO: Calculate change from previous period
+        value: formatCurrency(netExposure),
+        change: "0%",
       },
       {
         label: "Portfolio health",
         value: `${portfolioHealth.toFixed(1)}%`,
-        change: "+0%", // TODO: Calculate change from previous period
+        change: "+0%",
       },
     ];
   }, [pools]);
@@ -133,7 +142,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="space-y-0.5 md:space-y-1">
-                  <CryptoGlitch 
+                  <CryptoGlitch
                     text={metric.value}
                     className="text-lg md:text-2xl font-medium"
                   />
@@ -182,16 +191,16 @@ export default function Dashboard() {
                         {record.amountFormatted}
                       </TableCell>
                       <TableCell>
-                        <Badge 
+                        <Badge
                           variant={record.status === "Settled" ? "default" : record.status === "Released" ? "secondary" : "destructive"}
                           className={
                             record.status === "Settled"
                               ? "bg-success/10 text-success border-success/30"
                               : record.status === "Released"
-                              ? "bg-secondary text-secondary-foreground"
-                              : record.status === "Failed"
-                              ? "bg-destructive/10 text-destructive border-destructive/30"
-                              : ""
+                                ? "bg-secondary text-secondary-foreground"
+                                : record.status === "Failed"
+                                  ? "bg-destructive/10 text-destructive border-destructive/30"
+                                  : ""
                           }
                         >
                           {record.status}
