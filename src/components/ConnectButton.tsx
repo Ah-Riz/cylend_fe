@@ -23,8 +23,16 @@ export function ConnectWallet() {
         <div className="text-sm text-muted-foreground">
           {/* Connected to {chain?.name} ({address?.slice(0, 6)}...{address?.slice(-4)}) */}
         </div>
+      ) : (
+        <ConnectButton.Custom>
+          {({ openConnectModal }) => (
+            <Button variant="outline" size="sm" className="px-2 md:px-3 cursor-pointer" onClick={openConnectModal}>
+              <Wallet className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Connect</span>
+            </Button>
+          )}
+        </ConnectButton.Custom>
       )}
-      <RainbowConnectButton />
     </div>
   );
 }
