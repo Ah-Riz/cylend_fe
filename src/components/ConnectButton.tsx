@@ -1,49 +1,96 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Button } from "@/components/ui/button";
 import { Wallet } from "lucide-react";
-import {
-  useDisconnect,
-  useAccount,
-} from "wagmi";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 
 export function ConnectWallet() {
-  const { address, isConnected, chain } = useAccount();
-  const { disconnect } = useDisconnect();
-  const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
 
-  // Get network name from the actual connected chain
-  const networkName = chain?.name || "Unknown";
-
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="flex items-center gap-4">
-      {/* Wallet - compact on mobile */}
-      {isConnected ? (
-        <div className="flex items-center gap-2">
-          <Wallet className="h-4 w-4" />
-          <span className="hidden sm:inline font-mono text-xs md:text-sm">{formatAddress(address!)}</span>
-          <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => { disconnect(); toast({ title: "Disconnected", description: "You have been disconnected successfully." }); }}>
-            Disconnect
-          </Button>
-        </div>
+      {/* Skeleton / Loading State */}
+      {!mounted ? (
+        <Button variant="outline" size="sm" className="px-2 md:px-3 opacity-50 pointer-events-none">
+          <Wallet className="h-4 w-4 md:mr-2" />
+          <span className="hidden sm:inline">Connect</span>
+        </Button>
       ) : (
         <ConnectButton.Custom>
-          {({ openConnectModal }) => (
-            <Button variant="outline" size="sm" className="px-2 md:px-3 cursor-pointer" onClick={openConnectModal}>
-              <Wallet className="h-4 w-4 md:mr-2" />
-              <span className="hidden sm:inline">Connect</span>
-            </Button>
-          )}
+          {({
+            account,
+            chain,
+            openAccountModal,
+            openChainModal,
+            openConnectModal,
+            authenticationStatus,
+            mounted,
+          }) => {
+            const ready = mounted && authenticationStatus !== "loading";
+            const connected =
+              ready &&
+              account &&
+              chain &&
+              (!authenticationStatus || authenticationStatus === "authenticated");
+
+            return (
+              <div
+                {...(!ready && {
+                  "aria-hidden": true,
+                  style: {
+                    opacity: 0,
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  },
+                })}
+              >
+                {(() => {
+                  if (!connected) {
+                    return (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="px-2 md:px-3 cursor-pointer"
+                        onClick={openConnectModal}
+                      >
+                        <Wallet className="h-4 w-4 md:mr-2" />
+                        <span className="hidden sm:inline">Connect</span>
+                      </Button>
+                    );
+                  }
+
+                  if (chain.unsupported) {
+                    return (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={openChainModal}
+                      >
+                        Wrong network
+                      </Button>
+                    );
+                  }
+
+                  return (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openAccountModal}
+                    >
+                      {account.displayName}
+                    </Button>
+                  );
+                })()}
+              </div>
+            );
+          }}
         </ConnectButton.Custom>
       )}
     </div>
   );
 }
-

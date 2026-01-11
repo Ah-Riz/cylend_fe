@@ -26,6 +26,30 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-*"],
   },
 
+  transpilePackages: ["@walletconnect/logger", "@walletconnect/utils", "@wagmi/connectors", "wagmi", "@rainbow-me/rainbowkit"],
+
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+      "tap": false,
+      "tape": false,
+      "why-is-node-running": false,
+    };
+
+    config.externals.push(
+      "pino-pretty",
+      "lokijs",
+      "encoding",
+      "tap",
+      "tape",
+      "why-is-node-running"
+    );
+    return config;
+  },
+
   // Headers for security
   async headers() {
     return [

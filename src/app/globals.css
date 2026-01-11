@@ -457,32 +457,16 @@ h4 {
   filter: blur(0);
 }
 
-/* RainbowKit Modal Fix - Ensure modal appears above all content */
-/* Target the specific RainbowKit modal wrapper classes */
-.iekbcc0._9pm4ki3 {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 9999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background-color: rgba(0, 0, 0, 0.6) !important;
-  pointer-events: auto !important;
+/* Slow spin animation for Mantle badge */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Ensure the modal dialog container has proper positioning */
-._9pm4ki5[role="document"] {
-  position: relative !important;
-  pointer-events: auto !important;
-}
-
-/* Don't override RainbowKit's internal layout */
-.iekbcc0._9pm4ki3 * {
-  box-sizing: border-box;
-}
-
-/* Reset positioning on the dialog wrapper to not override internal layout */
-[data-rk] > div > div.iekbcc0:not(._9pm4ki3) {
-  position: static !important;
-  z-index: auto !important;
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
 }
