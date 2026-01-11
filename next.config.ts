@@ -6,26 +6,26 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  
+
   // React strict mode for better development experience
   reactStrictMode: true,
-  
+
   // Performance and security optimizations
   poweredByHeader: false,
   compress: true,
-  
+
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],
     dangerouslyAllowSVG: false,
   },
-  
+
   // Experimental features for better performance
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ["lucide-react", "@radix-ui/react-*"],
   },
-  
+
   // Headers for security
   async headers() {
     return [
