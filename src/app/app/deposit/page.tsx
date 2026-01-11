@@ -21,7 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Info, Wallet, Plus, CheckCircle2 } from "lucide-react";
+import { Info, Wallet, Plus, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount } from "wagmi";
@@ -51,7 +52,7 @@ export default function Deposit() {
 
   // Balance hooks
   const nativeBalance = useBalance({ address });
-  const tokenAddress = asset && asset !== "native" 
+  const tokenAddress = asset && asset !== "native"
     ? (getTokenAddressForType(asset) as Address | undefined)
     : undefined;
   const erc20Balance = useERC20Balance(tokenAddress);
@@ -233,12 +234,12 @@ export default function Deposit() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select asset" />
                 </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="native">MNT (Native)</SelectItem>
-                <SelectItem value="wmnt">WMNT</SelectItem>
-                <SelectItem value="usdc">USDC</SelectItem>
-                <SelectItem value="usdt">USDT</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="native">MNT (Native)</SelectItem>
+                  <SelectItem value="wmnt">WMNT</SelectItem>
+                  <SelectItem value="usdc">USDC</SelectItem>
+                  <SelectItem value="usdt">USDT</SelectItem>
+                </SelectContent>
               </Select>
             </div>
 
@@ -325,7 +326,14 @@ export default function Deposit() {
             {/* Privacy info */}
             <Card className="p-4 border-primary/30 bg-primary/5">
               <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div className="relative h-5 w-5 flex-shrink-0 mt-0.5">
+                  <Image
+                    src="/mantle-mnt-logo.png"
+                    alt="Mantle"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
                 <div className="text-sm text-muted-foreground">
                   Funds will be held in Cylend Escrow on Mantle. You can use this deposit for
                   multiple actions (supply, borrow, repay, withdraw) until the balance is
@@ -454,27 +462,27 @@ export default function Deposit() {
           transactionType === "approval"
             ? transactionStatus === "pending" ? "Confirm Approval"
               : transactionStatus === "confirming" ? "Confirming Approval"
-              : transactionStatus === "success" ? "Approval Successful"
-              : transactionStatus === "error" ? "Approval Failed"
-              : undefined
+                : transactionStatus === "success" ? "Approval Successful"
+                  : transactionStatus === "error" ? "Approval Failed"
+                    : undefined
             : transactionStatus === "pending" ? "Confirm Deposit"
-            : transactionStatus === "confirming" ? "Confirming Deposit"
-            : transactionStatus === "success" ? "Deposit Successful"
-            : transactionStatus === "error" ? "Deposit Failed"
-            : undefined
+              : transactionStatus === "confirming" ? "Confirming Deposit"
+                : transactionStatus === "success" ? "Deposit Successful"
+                  : transactionStatus === "error" ? "Deposit Failed"
+                    : undefined
         }
         description={
           transactionType === "approval"
             ? transactionStatus === "pending" ? "Please confirm the approval transaction in your wallet."
               : transactionStatus === "confirming" ? "Waiting for blockchain confirmation..."
-              : transactionStatus === "success" ? "Token approval successful. You can now create a deposit."
-              : transactionStatus === "error" ? undefined
-              : undefined
+                : transactionStatus === "success" ? "Token approval successful. You can now create a deposit."
+                  : transactionStatus === "error" ? undefined
+                    : undefined
             : transactionStatus === "pending" ? "Please confirm the deposit transaction in your wallet."
-            : transactionStatus === "confirming" ? "Waiting for blockchain confirmation..."
-            : transactionStatus === "success" ? "Your deposit has been successfully created."
-            : transactionStatus === "error" ? undefined
-            : undefined
+              : transactionStatus === "confirming" ? "Waiting for blockchain confirmation..."
+                : transactionStatus === "success" ? "Your deposit has been successfully created."
+                  : transactionStatus === "error" ? undefined
+                    : undefined
         }
         errorMessage={error?.message}
         onClose={() => {

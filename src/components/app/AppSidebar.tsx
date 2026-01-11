@@ -53,8 +53,13 @@ export function AppSidebar() {
               : "h-14 md:h-16 px-4 md:px-6 border-b border-border flex items-center"
           }
         >
-          <div className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-2"}>
+          <div className={isCollapsed ? "flex items-center justify-center" : "flex items-center gap-3"}>
             <Logo className="h-6 w-auto flex-shrink-0" variant="secondary" />
+            {!isCollapsed && (
+              <span className="text-lg font-semibold text-foreground">
+                Cylend Protocol
+              </span>
+            )}
           </div>
         </div>
 
