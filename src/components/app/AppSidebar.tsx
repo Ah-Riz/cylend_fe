@@ -12,10 +12,13 @@ import {
   ArrowUpToLine,
   ReceiptText,
   Settings,
+  BookText,
+  Github,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -36,6 +39,11 @@ const menuItems: { title: string; url: string; end?: boolean; icon: LucideIcon }
   { title: "Repay / Settle", url: "/app/repay", icon: ReceiptText },
   { title: "Settlement records", url: "/app/records", icon: ArrowDownToLine },
   { title: "Settings", url: "/app/settings", icon: Settings },
+];
+
+const resourcesItems: { title: string; url: string; icon: LucideIcon }[] = [
+  { title: "Documentation", url: "https://docs.cylend.xyz", icon: BookText },
+  { title: "GitHub", url: "https://github.com/Ah-Riz/cylend_fe", icon: Github },
 ];
 
 export function AppSidebar() {
@@ -92,7 +100,38 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarGroup>
+          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+            Resources
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {resourcesItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={
+                        isCollapsed
+                          ? "flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                          : "flex items-center gap-3 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                      }
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarFooter>
     </Sidebar>
   );
 }
