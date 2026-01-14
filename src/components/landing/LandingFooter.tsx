@@ -3,30 +3,35 @@ import Logo from "@/components/Logo";
 
 const LandingFooter = () => {
   return (
-    <footer className="border-t border-border py-12 px-6">
+    <footer className="py-20 px-6 relative z-10">
       <div className="container mx-auto max-w-7xl">
-        <div className="flex flex-col items-center gap-8 text-center">
+        <div className="flex flex-col items-center gap-12 text-center">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Logo className="h-6 w-auto" variant="primary" />
+          <div className="flex items-center gap-2 scale-125">
+            <Logo className="h-10 w-auto" variant="primary" />
           </div>
 
           {/* Links */}
-          <div className="flex items-center gap-8 text-sm">
-            <Link href="/app" className="text-muted-foreground hover:text-foreground transition-colors">
+          <div className="flex items-center gap-8 md:gap-16 text-lg font-medium text-muted-foreground/80">
+            <Link href="/app" className="hover:text-primary transition-colors">
               Enter App
             </Link>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="https://docs.cylend.xyz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
               Documentation
             </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="https://github.com/Ah-Riz/cylend_fe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
               GitHub
             </a>
-          </div>
-
-          {/* Tagline */}
-          <div className="text-sm text-muted-foreground">
-            Your Credit. Your Privacy.
           </div>
         </div>
       </div>
